@@ -24,7 +24,7 @@ enum {
 enum {
     START_BLOCKS = 1024,
     MAX_THREADS = 3 //doesn't include main so for the real amount of threads add 1 and you get the real amount including main.
-}
+};
 
 typedef struct {
     long int *inputs;
