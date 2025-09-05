@@ -5,79 +5,13 @@
 #include <stdbool.h>
 #include <string.h>
 #include <time.h>
+#include "consts.c"
 
-#define MAX_BLOCKS 1024
-#define MAX_CONNECTIONS 2048
-#define MAX_THREADS 8
-
-typedef struct {
-    long int *inputs;
-    long int inputsSize;
-    long int inputCount;
-    long int *outputs;
-    long int outputsSize;
-    long int outputCount;
-    float x, y, z;
-    __uint8_t ID;
-} Block;
-
-typedef struct {
-    Block Base; //this is for block ID 6
-    __uint8_t RedAmount; //0-255
-    __uint8_t GreenAmount; // 0-255
-    __uint8_t BlueAmount; // 0-255
-    __uint8_t OpacityOn; // 5-100
-    __uint8_t OpacityOff; // 5-100
-    bool analog; // 0-1
-} LedBlock; // these are all just for GUI and don't affect logic
-
-typedef struct {
-    Block Base; //this is for block ID 7
-    __uint32_t Frequency; // fixed point 0-16000 with 2 decimal places
-    __uint8_t Instrument; // 0-5 for Sine, Square, Triangle Sawtooth, Meow, or Snare.
-} SoundBlock; // these are all just for GUI and don't affect logic
-
-typedef struct {
-    Block Base; //this is for block ID 12
-    __uint8_t Probability; // 0.0 to 1.0, fixed point with 2 decimal places, so 0 to 100
-} RandomBlock;
-
-typedef struct {
-    Block Base; //this is for block ID 13
-    char Character; //stores a single character 0-255
-} CharBlock; // these are all just for GUI and don't affect logic
-
-typedef struct {
-    Block Base; //this is for block ID 14
-    __uint8_t RedAmount; //0-255
-    __uint8_t GreenAmount; // 0-255
-    __uint8_t BlueAmount; // 0-255
-    __uint8_t Material; // 0-13 for different material
-    bool Collision; // 0-1
-} TileBlock; // these are all just for GUI and don't affect logic
-
-typedef struct {
-    Block Base; //this is for block ID 16
-    __uint16_t DelayTime; // in ticks, 1-1000
-} DelayBlock; 
-
-typedef struct {
-    Block Base; //this is for block ID 17
-    char Owner[20]; // up to 20 character owner name
-    __uint16_t Signal; // 0-65535, all antennas on the same signal will turn on if any are on
-    bool Global; // 1 for global and all other global antennas will turn on if any are on
-} AntennaBlock;
-
-typedef struct {
-    Block Base; //this is for block ID 19
-    bool Additive; // 1 for additive blending, 0 for subtractive blending.
-} LedMixerBlock; // these are all just for GUI and don't affect logic
-
-Block *blocks[MAX_BLOCKS];
+Block *blocks[START_BLOCKS];
 int BlockCount = 0;
 
-bool stateArr[MAX_BLOCKS];
-bool preStateArr[MAX_BLOCKS];
+bool stateArr[START_BLOCKS];
+bool preStateArr[START_BLOCKS];
 bool *state = stateArr;
 bool *preState = preStateArr;
 
@@ -459,7 +393,7 @@ size_t extraDataSize(__uint8_t id) {
 }
 
 Block *CreateBlock(__uint8_t id, float x, float y, float z, bool initialState) {
-    if (BlockCount >= MAX_BLOCKS) return NULL;
+    if (BlockCount >= START_BLOCKS) return NULL;
 
     Block *b = malloc(extraDataSize(id));
     if (!b) return NULL;
@@ -496,8 +430,8 @@ void parseBlocks(const char *input, const char *owner) {
 
         ptr += charsRead;
 
-        if (BlockCount >= MAX_BLOCKS) {
-            fprintf(stderr, "Error: too many blocks (max=%d)\n", MAX_BLOCKS);
+        if (BlockCount >= START_BLOCKS) {
+            fprintf(stderr, "Error: too many blocks (max=%d)\n", START_BLOCKS);
             break;
         }
 
