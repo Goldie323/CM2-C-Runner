@@ -206,7 +206,7 @@ bool randomGate(long int index) {
     if (Probability == 0) return false;
     if (Probability >= 100) return true;
 
-    int randomNumber = rand() % 101; // 0 to 100
+    int randomNumber = rand() / (RAND_MAX + 1.0) * 101;
     if (randomNumber < Probability) return true;
     return false;
 }
