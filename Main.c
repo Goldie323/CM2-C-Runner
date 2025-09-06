@@ -8,7 +8,7 @@
 #include "consts.c"
 
 Block *blocks[START_BLOCKS];
-int BlockCount = 0;
+unsigned long int BlockCount = 0;
 
 bool stateArr[START_BLOCKS];
 bool preStateArr[START_BLOCKS];
@@ -21,7 +21,7 @@ atomic_uint_least64_t taskIndex;
 atomic_uint_least64_t blocksRemaining;
 
 
-typedef bool (*GateFunc)(long int index);
+typedef bool (*GateFunc)(unsigned long int index);
 
 #define Check_alloc_fail(var, action)  \
 if (!var) {  \
@@ -29,190 +29,186 @@ if (!var) {  \
     action;  \
 }
 
-bool norGate(long int index) {
-    const long int *inputs = blocks[index]->inputs;
-    long int inputCount = blocks[index]->inputCount;
-    for (long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return false;
-    }
-    return true;
-}
-
-bool andGate(long int index) {
-    const long int *inputs = blocks[index]->inputs;
-    long int inputCount = blocks[index]->inputCount;
-    for (long int i = 0; i < inputCount; i++) {
-        if (!state[inputs[i]]) return false;
-    }
-    return true;
-}
-
-bool orGate(long int index) {
-    const long int *inputs = blocks[index]->inputs;
-    long int inputCount = blocks[index]->inputCount;
-    for (long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
-    }
-    return false;
-}
-
-bool xorGate(long int index) {
-    const long int *inputs = blocks[index]->inputs;
-    long int inputCount = blocks[index]->inputCount;
+bool InfXor(const unsigned long int *inputs,  unsigned long int inputCount) {
     bool result = false;
-    for (long int i = 0; i < inputCount; i++) {
+    for (unsigned long int i = 0; i < inputCount; i++) {
         if (state[inputs[i]]) result = !result;
     }
     return result;
 }
 
-// gui will change the button state and then every tick will just turn it off and no inputs will change that
-bool ButtonGate(long int index) {
+bool norGate(unsigned long int index) {
+    const unsigned long int *inputs = blocks[index]->inputs;
+    unsigned long int inputCount = blocks[index]->inputCount;
+    for (unsigned long int i = 0; i < inputCount; i++) {
+        if (state[inputs[i]]) return false;
+    }
+    return true;
+}
+
+bool andGate(unsigned long int index) {
+    const unsigned long int *inputs = blocks[index]->inputs;
+    unsigned long int inputCount = blocks[index]->inputCount;
+    for (unsigned long int i = 0; i < inputCount; i++) {
+        if (!state[inputs[i]]) return false;
+    }
+    return true;
+}
+
+bool orGate(unsigned long int index) {
+    const unsigned long int *inputs = blocks[index]->inputs;
+    unsigned long int inputCount = blocks[index]->inputCount;
+    for (unsigned long int i = 0; i < inputCount; i++) {
+        if (state[inputs[i]]) return true;
+    }
     return false;
 }
 
-bool FlipFlopGate(long int index) {
-    Block *b = blocks[index];
-    FlipFlopBlock *Flipper = (flipFlopBlock *)b
-    const long int *inputs = blocks[index]->inputs;
-    long int inputCount = blocks[index]->inputCount;
-    bool ReturnState = state[index];
-    for (long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) {
-            ReturnState = !state[index];
-            break;
-        }
-    }
+bool xorGate(unsigned long int index) {
+    return InfXor(blocks[index]->inputs, blocks[index]->inputCount);
+}
 
-    if 
+// gui will change the button state and then every tick will just turn it off and no inputs will change that
+bool ButtonGate(unsigned long int index) {
+    return false;
+}
+
+bool FlipFlopGate(unsigned long int index) {
+    Block *b = blocks[index];
+    FlipFlopBlock *Flipper = (FlipFlopBlock *)b;
+    bool CurrXor = InfXor(b->inputs, b->inputCount);
+    bool OutputState = state[index];
+    if (!Flipper->PrevXor&CurrXor)  OutputState = !OutputState;
+    Flipper->PrevXor = CurrXor;
+    return OutputState;
 }
 
 // logical or but gui handles led
-bool ledGate(long int index) {
-    const long int *inputs = blocks[index]->inputs;
-    long int inputCount = blocks[index]->inputCount;
-    for (long int i = 0; i < inputCount; i++) {
+bool ledGate(unsigned long int index) {
+    const unsigned long int *inputs = blocks[index]->inputs;
+    unsigned long int inputCount = blocks[index]->inputCount;
+    for (unsigned long int i = 0; i < inputCount; i++) {
         if (state[inputs[i]]) return true;
     }
     return false;
 }
 
 // logical or but gui handles sound
-bool soundGate(long int index) {
-    const long int *inputs = blocks[index]->inputs;
-    long int inputCount = blocks[index]->inputCount;
-    for (long int i = 0; i < inputCount; i++) {
+bool soundGate(unsigned long int index) {
+    const unsigned long int *inputs = blocks[index]->inputs;
+    unsigned long int inputCount = blocks[index]->inputCount;
+    for (unsigned long int i = 0; i < inputCount; i++) {
         if (state[inputs[i]]) return true;
     }
     return false;
 }
 
 // this needs to do a linear search of all the blocks to find the ones next to it and do an or operation to find it's current value
-bool conductorGate(long int index) {
-    const long int *inputs = blocks[index]->inputs;
-    long int inputCount = blocks[index]->inputCount;
-    for (long int i = 0; i < inputCount; i++) {
+bool conductorGate(unsigned long int index) {
+    const unsigned long int *inputs = blocks[index]->inputs;
+    unsigned long int inputCount = blocks[index]->inputCount;
+    for (unsigned long int i = 0; i < inputCount; i++) {
         if (state[inputs[i]]) return true;
     }
     return false;
 }
 
-bool customGate(long int index) {
-    const long int *inputs = blocks[index]->inputs;
-    long int inputCount = blocks[index]->inputCount;
-    for (long int i = 0; i < inputCount; i++) {
+bool customGate(unsigned long int index) {
+    const unsigned long int *inputs = blocks[index]->inputs;
+    unsigned long int inputCount = blocks[index]->inputCount;
+    for (unsigned long int i = 0; i < inputCount; i++) {
         if (state[inputs[i]]) return true;
     }
     return false;
 }
 
-bool nandGate(long int index) {
-    const long int *inputs = blocks[index]->inputs;
-    long int inputCount = blocks[index]->inputCount;
-    for (long int i = 0; i < inputCount; i++) {
+bool nandGate(unsigned long int index) {
+    const unsigned long int *inputs = blocks[index]->inputs;
+    unsigned long int inputCount = blocks[index]->inputCount;
+    for (unsigned long int i = 0; i < inputCount; i++) {
         if (!state[inputs[i]]) return true;
     }
     return false;
 }
 
-bool xnorGate(long int index) {
-    const long int *inputs = blocks[index]->inputs;
-    long int inputCount = blocks[index]->inputCount;
+bool xnorGate(unsigned long int index) {
+    const unsigned long int *inputs = blocks[index]->inputs;
+    unsigned long int inputCount = blocks[index]->inputCount;
     bool result = true;
-    for (long int i = 0; i < inputCount; i++) {
+    for (unsigned long int i = 0; i < inputCount; i++) {
         if (state[inputs[i]]) result = !result;
     }
     return result;
 }
 
-bool randomGate(long int index) {
+bool randomGate(unsigned long int index) {
     Block *b = blocks[index];
     RandomBlock *rb = (RandomBlock *)b;
     __uint8_t Probability = rb->Probability; // 0 to 100
     if (Probability == 0) return false;
     if (Probability >= 100) return true;
 
-    int randomNumber = rand() / (RAND_MAX + 1.0) * 101;
+    unsigned long int randomNumber = rand() / (RAND_MAX + 1.0) * 101;
     if (randomNumber < Probability) return true;
     return false;
 }
 
-bool TextGate(long int index) {
-    const long int *inputs = blocks[index]->inputs;
-    long int inputCount = blocks[index]->inputCount;
-    for (long int i = 0; i < inputCount; i++) {
+bool TextGate(unsigned long int index) {
+    const unsigned long int *inputs = blocks[index]->inputs;
+    unsigned long int inputCount = blocks[index]->inputCount;
+    for (unsigned long int i = 0; i < inputCount; i++) {
         if (state[inputs[i]]) return true;
     }
     return false;
 }
 
 // kind of like button, gui might tell it to be on but inputs don't change it and so every tick just turn it off
-bool TileGate(long int index) {
+bool TileGate(unsigned long int index) {
     return false;
 }
 
 // this also requires a search, a better one but still need to search and it needs to check all it's outputs and check if they're a node and if they are, run the same logic on them. Needs recursion :sob:
-bool nodeGate(long int index) {
-    const long int *inputs = blocks[index]->inputs;
-    long int inputCount = blocks[index]->inputCount;
-    for (long int i = 0; i < inputCount; i++) {
+bool nodeGate(unsigned long int index) {
+    const unsigned long int *inputs = blocks[index]->inputs;
+    unsigned long int inputCount = blocks[index]->inputCount;
+    for (unsigned long int i = 0; i < inputCount; i++) {
         if (state[inputs[i]]) return true;
     }
     return false;
 }
 
 
-bool delayBlock(long int index) {
+bool delayBlock(unsigned long int index) {
     //the original code was AI and dumb
     return false;
 }
 
 
 // need to do a linear search and check for all the globals/same user and then if ANY of them are on then it'll turn on, otherwise it's based on the OR of the inputs
-bool antennaGate(long int index) {
-    const long int *inputs = blocks[index]->inputs;
-    long int inputCount = blocks[index]->inputCount;
-    for (long int i = 0; i < inputCount; i++) {
+bool antennaGate(unsigned long int index) {
+    const unsigned long int *inputs = blocks[index]->inputs;
+    unsigned long int inputCount = blocks[index]->inputCount;
+    for (unsigned long int i = 0; i < inputCount; i++) {
         if (state[inputs[i]]) return true;
     }
     return false;
 }
 
 // another recursive one based on xyz and so I don't wanna do this yet because it's require a linear search of all the blocks and I don't wanna deal with that yes
-bool conductor2Gate(long int index) {
-    const long int *inputs = blocks[index]->inputs;
-    long int inputCount = blocks[index]->inputCount;
-    for (long int i = 0; i < inputCount; i++) {
+bool conductor2Gate(unsigned long int index) {
+    const unsigned long int *inputs = blocks[index]->inputs;
+    unsigned long int inputCount = blocks[index]->inputCount;
+    for (unsigned long int i = 0; i < inputCount; i++) {
         if (state[inputs[i]]) return true;
     }
     return false;
 }
 
 // does a logic or and the rest is handled by GUI
-bool ledMixerGate(long int index) {
-    const long int *inputs = blocks[index]->inputs;
-    long int inputCount = blocks[index]->inputCount;
-    for (long int i = 0; i < inputCount; i++) {
+bool ledMixerGate(unsigned long int index) {
+    const unsigned long int *inputs = blocks[index]->inputs;
+    unsigned long int inputCount = blocks[index]->inputCount;
+    for (unsigned long int i = 0; i < inputCount; i++) {
         if (state[inputs[i]]) return true;
     }
     return false;
@@ -244,7 +240,7 @@ void initGateFunctions() {
 }
 
 
-void computeBlock(long int index);
+void computeBlock(unsigned long int index);
 
 atomic_bool terminateThreads = false;
 int workerThread(void *arg) {
@@ -253,14 +249,14 @@ int workerThread(void *arg) {
 
         while (atomic_load(&blocksRemaining) == 0 && !atomic_load(&terminateThreads)) thrd_yield();
 
-        int i = atomic_fetch_add(&taskIndex, 1);
+        unsigned long int i = atomic_fetch_add(&taskIndex, 1);
         if (i >= BlockCount) break;
         computeBlock(i);
         atomic_fetch_sub(&blocksRemaining, 1);
     }
     return 0;
 }
-void computeBlock(long int index) {
+void computeBlock(unsigned long int index) {
     Block *b = blocks[index];
     if (!b) {
         return; // skip null block
@@ -281,7 +277,7 @@ void tickCalc() {
     atomic_store(&blocksRemaining, BlockCount);
 
     // Main thread participates
-    long int i;
+    unsigned long int i;
     while ((i = atomic_fetch_add(&taskIndex, 1)) < BlockCount) {
         computeBlock(i);
         atomic_fetch_sub(&blocksRemaining, 1);
@@ -298,38 +294,38 @@ void tick() {
     preState = tmp;
 }
 
-void addInput(Block *b, long int value) {
-    if (!b) return; // Safety check for null pointer
+void addInput(Block *b, unsigned long int value) {
+    if (!b) return; // Safety check for null pounsigned long inter
     if (b->inputsSize == 0) {
         b->inputsSize = 4;
-        b->inputs = malloc(sizeof(long int) * b->inputsSize);
+        b->inputs = malloc(sizeof(unsigned long int) * b->inputsSize);
         Check_alloc_fail(b->inputs, exit(1))
     } else if (b->inputCount >= b->inputsSize) {
         b->inputsSize *= 2;
-        b->inputs = realloc(b->inputs, sizeof(long int) * b->inputsSize);
+        b->inputs = realloc(b->inputs, sizeof(unsigned long int) * b->inputsSize);
         Check_alloc_fail(b->inputs, exit(1))
     }
     b->inputs[b->inputCount++] = value;
 }
 
-void addOutput(Block *b, long int value) {
-    if (!b) return; // Safety check for null pointer
+void addOutput(Block *b, unsigned long int value) {
+    if (!b) return; // Safety check for null pounsigned long inter
     if (b->outputsSize == 0) {
         b->outputsSize = 4;
-        b->outputs = malloc(sizeof(long int) * b->outputsSize);
+        b->outputs = malloc(sizeof(unsigned long int) * b->outputsSize);
         Check_alloc_fail(b->outputs, exit(1))
     } else if (b->outputCount >= b->outputsSize) {
         b->outputsSize *= 2;
-        b->outputs = realloc(b->outputs, sizeof(long int) * b->outputsSize);
+        b->outputs = realloc(b->outputs, sizeof(unsigned long int) * b->outputsSize);
         Check_alloc_fail(b->outputs, exit(1))
     }
     b->outputs[b->outputCount++] = value;
 }
 
-void removeInput(Block *b, long int value) {
-    for (long int i = 0; i < b->inputCount; i++) {
+void removeInput(Block *b, unsigned long int value) {
+    for (unsigned long int i = 0; i < b->inputCount; i++) {
         if (b->inputs[i] == value) {
-            for (long int j = i; j < b->inputCount - 1; j++) {
+            for (unsigned long int j = i; j < b->inputCount - 1; j++) {
                 b->inputs[j] = b->inputs[j + 1];
             }
             b->inputCount--;
@@ -338,10 +334,10 @@ void removeInput(Block *b, long int value) {
     }
 }
 
-void removeOutput(Block *b, long int value) {
-    for (long int i = 0; i < b->outputCount; i++) {
+void removeOutput(Block *b, unsigned long int value) {
+    for (unsigned long int i = 0; i < b->outputCount; i++) {
         if (b->outputs[i] == value) {
-            for (long int j = i; j < b->outputCount - 1; j++) {
+            for (unsigned long int j = i; j < b->outputCount - 1; j++) {
                 b->outputs[j] = b->outputs[j + 1];
             }
             b->outputCount--;
@@ -350,7 +346,7 @@ void removeOutput(Block *b, long int value) {
     }
 }
 
-void removeConnection(int from, int to) {
+void removeConnection(unsigned long int from, unsigned long int to) {
     Block *src = blocks[from];
     Block *dst = blocks[to];
 
@@ -358,7 +354,7 @@ void removeConnection(int from, int to) {
     removeInput(dst, from);
 }
 
-void addConnection(int from, int to) {
+void addConnection(unsigned long int from, unsigned long int to) {
     Block *src = blocks[from];
     Block *dst = blocks[to];
 
@@ -366,19 +362,19 @@ void addConnection(int from, int to) {
     addInput(dst, from);
 }
 
-void removeBlock(long int index) {
+void removeBlock(unsigned long int index) {
     if (index < 0 || index >= BlockCount) return;
 
     Block *b = blocks[index];
 
-    for (long int i = 0; i < b->inputCount; i++) {
-        long int inputIdx = b->inputs[i];
+    for (unsigned long int i = 0; i < b->inputCount; i++) {
+        unsigned long int inputIdx = b->inputs[i];
         if (inputIdx >= 0 && inputIdx < BlockCount) {
             removeOutput(blocks[inputIdx], index);
         }
     }
-    for (long int i = 0; i < b->outputCount; i++) {
-        long int outputIdx = b->outputs[i];
+    for (unsigned long int i = 0; i < b->outputCount; i++) {
+        unsigned long int outputIdx = b->outputs[i];
         if (outputIdx >= 0 && outputIdx < BlockCount) {
             removeInput(blocks[outputIdx], index);
         }
@@ -396,7 +392,7 @@ void removeBlock(long int index) {
 
 size_t extraDataSize(__uint8_t id) {
     switch (id) {
-        case 5; return sizeof(FlipFlopBlock);
+        case 5: return sizeof(FlipFlopBlock);
         case 6: return sizeof(LedBlock);
         case 7: return sizeof(SoundBlock); 
         case 12: return sizeof(RandomBlock);
@@ -409,11 +405,11 @@ size_t extraDataSize(__uint8_t id) {
     }
 }
 
-Block *CreateBlock(__uint8_t id, float x, float y, float z) {
+Block *CreateBlock(__uint8_t id, long int x, long int y, long int z) {
     if (BlockCount >= START_BLOCKS) return NULL;
 
     Block *b = malloc(extraDataSize(id));
-    Check_alloc_fail(B, return NULL)
+    Check_alloc_fail(b, return NULL)
     
     // Initialize the block
     memset(b, 0, extraDataSize(id));
@@ -434,9 +430,9 @@ Block *CreateBlock(__uint8_t id, float x, float y, float z) {
 void parseBlocks(const char *input, const char *owner) {
     const char *ptr = input;
     while (*ptr && *ptr != '?') {
-        int idTmp, sTmp;
-        float x, y, z;
-        int charsRead;
+        unsigned long int idTmp, sTmp;
+        long int x, y, z;
+        unsigned long int charsRead;
 
         // Read basic block info safely
         if (sscanf(ptr, "%d,%d,%f,%f,%f%n", &idTmp, &sTmp, &x, &y, &z, &charsRead) < 5)
@@ -453,7 +449,7 @@ void parseBlocks(const char *input, const char *owner) {
         }
 
         // Create the block
-        Block *b = CreateBlock(id, x, y, z, s);
+        Block *b = CreateBlock(id, x, y, z);
         if (!b) break;
 
         blocks[BlockCount] = b;
@@ -464,16 +460,16 @@ void parseBlocks(const char *input, const char *owner) {
             const char *semi = strchr(ptr, ';');
             if (!semi) semi = strchr(ptr, '?');
             if (semi) {
-                int len = (int)(semi - ptr);
+                unsigned long int len = (unsigned long int)(semi - ptr);
                 char *buffer = malloc(len + 1); // Dynamic buffer allocation
                 Check_alloc_fail(buffer, break)
                 memcpy(buffer, ptr, len);
                 buffer[len] = '\0';
 
                 switch (id) {
-                    case 5; { // Flip Flop Block
+                    case 5: { // Flip Flop Block
                         FlipFlopBlock *flipFlopBlock = (FlipFlopBlock *)blocks[BlockCount];
-                        flipFlopBlock->PrevInputs = NULL;
+                        flipFlopBlock->PrevXor = 1;
                     }
                     case 6: { // LED Block
                         LedBlock *ledBlock = (LedBlock *)blocks[BlockCount];
@@ -484,8 +480,8 @@ void parseBlocks(const char *input, const char *owner) {
                         ledBlock->OpacityOff = 5;
                         ledBlock->analog = false;
 
-                        int values[6];
-                        int count = sscanf(buffer, "%d+%d+%d+%d+%d+%d",
+                        unsigned long int values[6];
+                        unsigned long int count = sscanf(buffer, "%d+%d+%d+%d+%d+%d",
                                            &values[0], &values[1], &values[2],
                                            &values[3], &values[4], &values[5]);
                         if (count >= 1) ledBlock->RedAmount = values[0];
@@ -501,8 +497,8 @@ void parseBlocks(const char *input, const char *owner) {
                         soundBlock->Frequency = 44000;
                         soundBlock->Instrument = 0;
 
-                        int values[2];
-                        int count = sscanf(buffer, "%d+%d", &values[0], &values[1]);
+                        unsigned long int values[2];
+                        unsigned long int count = sscanf(buffer, "%d+%d", &values[0], &values[1]);
                         if (count >= 1) soundBlock->Frequency = values[0];
                         if (count >= 2) soundBlock->Instrument = values[1];
                         break;
@@ -510,7 +506,7 @@ void parseBlocks(const char *input, const char *owner) {
                     case 12: { // Random Block
                         RandomBlock *randomBlock = (RandomBlock *)blocks[BlockCount];
                         randomBlock->Probability = 50;
-                        int value;
+                        unsigned long int value;
                         if (sscanf(buffer, "%d", &value) == 1)
                             randomBlock->Probability = value;
                         break;
@@ -518,7 +514,7 @@ void parseBlocks(const char *input, const char *owner) {
                     case 13: { // Char Block
                         CharBlock *charBlock = (CharBlock *)blocks[BlockCount];
                         charBlock->Character = 'A';
-                        int value;
+                        unsigned long int value;
                         if (sscanf(buffer, "%d", &value) == 1)
                             charBlock->Character = (char)value;
                         break;
@@ -531,8 +527,8 @@ void parseBlocks(const char *input, const char *owner) {
                         tileBlock->Material = 0;
                         tileBlock->Collision = false;
 
-                        int values[5];
-                        int count = sscanf(buffer, "%d+%d+%d+%d+%d",
+                        unsigned long int values[5];
+                        unsigned long int count = sscanf(buffer, "%d+%d+%d+%d+%d",
                                            &values[0], &values[1], &values[2],
                                            &values[3], &values[4]);
                         if (count >= 1) tileBlock->RedAmount = values[0];
@@ -545,7 +541,7 @@ void parseBlocks(const char *input, const char *owner) {
                     case 16: { // Delay Block
                         DelayBlock *delayBlock = (DelayBlock *)blocks[BlockCount];
                         delayBlock->DelayTime = 1;
-                        int value;
+                        unsigned long int value;
                         if (sscanf(buffer, "%d", &value) == 1)
                             delayBlock->DelayTime = value;
                         break;
@@ -555,8 +551,8 @@ void parseBlocks(const char *input, const char *owner) {
                         antennaBlock->Signal = 0;
                         antennaBlock->Global = false;
 
-                        int signal, global;
-                        int count = sscanf(buffer, "%d+%d", &signal, &global);
+                        unsigned long int signal, global;
+                        unsigned long int count = sscanf(buffer, "%d+%d", &signal, &global);
                         if (count >= 1) {
                             strncpy(antennaBlock->Owner, owner, sizeof(antennaBlock->Owner) - 1);
                             antennaBlock->Owner[sizeof(antennaBlock->Owner) - 1] = '\0';
@@ -568,7 +564,7 @@ void parseBlocks(const char *input, const char *owner) {
                     case 19: { // LED Mixer Block
                         LedMixerBlock *ledMixerBlock = (LedMixerBlock *)blocks[BlockCount];
                         ledMixerBlock->Additive = true;
-                        int value;
+                        unsigned long int value;
                         if (sscanf(buffer, "%d", &value) == 1)
                             ledMixerBlock->Additive = (value != 0);
                         break;
@@ -594,8 +590,8 @@ void parseBlocks(const char *input, const char *owner) {
 void parseConnections(const char *input) {
     const char *ptr = input;
     while (*ptr && *ptr != '?') {
-        int from, to;
-        int charsRead;
+        unsigned long int from, to;
+        unsigned long int charsRead;
         if (sscanf(ptr, "%d,%d%n", &from, &to, &charsRead) < 2) break;
         ptr += charsRead;
         if (*ptr == ';') ptr++;
@@ -630,9 +626,9 @@ void sleepForTick(double seconds) {
 }
 
 
-int main(int argc, char *argv[]) {
+int main(unsigned long int argc, char *argv[]) {
 
-    for (long int i = 0; i < THREAD_COUNT; i++) {
+    for (unsigned long int i = 0; i < THREAD_COUNT; i++) {
         thrd_create(&threads[i], workerThread, NULL);
     }
 
@@ -657,12 +653,12 @@ int main(int argc, char *argv[]) {
     initGateFunctions();
     
     // Get simulation parameters from command line arguments
-    //long int totalTicks = atol(argv[2]);
-    //long int ticksPerSecond = atol(argv[3]);
+    //unsigned long int totalTicks = atol(argv[2]);
+    //unsigned long int ticksPerSecond = atol(argv[3]);
     
 
-    long int totalTicks = 1000;
-    long int ticksPerSecond = 0;
+    unsigned long int totalTicks = 1000;
+    unsigned long int ticksPerSecond = 0;
 
     if (totalTicks <= 0) {
         fprintf(stderr, "Error: total ticks must be positive\n");
@@ -671,7 +667,7 @@ int main(int argc, char *argv[]) {
     
     double tickDuration = (ticksPerSecond > 0) ? 1.0 / ticksPerSecond : 0;
     
-    for (long int t = 0; t < totalTicks; t++) {
+    for (unsigned long int t = 0; t < totalTicks; t++) {
         clock_t start = (ticksPerSecond > 0) ? clock() : 0;
         tick();
         
@@ -681,9 +677,9 @@ int main(int argc, char *argv[]) {
             if (elapsed < tickDuration) sleepForTick(tickDuration - elapsed);
         }
 
-        // Print tick and block states on the same line, updating dynamically
+        // Prunsigned long int tick and block states on the same line, updating dynamically
         printf("\rTick %lld | ", t+1);
-        for (long int i = 0; i < BlockCount; i++) {
+        for (unsigned long int i = 0; i < BlockCount; i++) {
             printf("%dB%lld:%d ", blocks[i]->ID, i, state[i]);
         }
         fflush(stdout);
@@ -695,7 +691,7 @@ int main(int argc, char *argv[]) {
     atomic_store(&blocksRemaining, 0); // Reset to 0 to allow threads to exit
 
     // Join threads
-    for (long int i = 0; i < THREAD_COUNT; i++) {
+    for (unsigned long int i = 0; i < THREAD_COUNT; i++) {
         printf("\rJoining threads %ld/%ld", i+1, THREAD_COUNT);
         fflush(stdout);
         thrd_join(threads[i], NULL);
@@ -703,7 +699,7 @@ int main(int argc, char *argv[]) {
     printf("\rAll threads joined                    \n");
 
     // Free dynamic memory
-    for (int i = 0; i < BlockCount; i++) {
+    for (unsigned long int i = 0; i < BlockCount; i++) {
         printf("\rFreeing blocks %d/%d", i+1, BlockCount);
         fflush(stdout);
         free(blocks[i]->inputs);

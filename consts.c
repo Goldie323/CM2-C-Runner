@@ -27,19 +27,19 @@ enum {
 };
 
 typedef struct {
-    long int *inputs;
-    long int inputsSize;
-    long int inputCount;
-    long int *outputs;
-    long int outputsSize;
-    long int outputCount;
-    float x, y, z;
+    unsigned long int *inputs;
+    unsigned long int inputsSize;
+    unsigned long int inputCount;
+    unsigned long int *outputs;
+    unsigned long int outputsSize;
+    unsigned long int outputCount;
+    unsigned long int x, y, z;
     __uint8_t ID;
 } Block;
 
 typedef struct {
     Block Base;
-    bool *PrevInputs;
+    bool PrevXor;
 } FlipFlopBlock;
 
 typedef struct {
