@@ -23,6 +23,11 @@ atomic_uint_least64_t blocksRemaining;
 
 typedef bool (*GateFunc)(long int index);
 
+#define Check_alloc_fail(var, action)  \
+if (!var) {  \
+    fprintf(stderr, "Error: Failed to allocate memory for buffer\n");   \
+    action;  \
+}
 
 bool norGate(long int index) {
     const long int *inputs = blocks[index]->inputs;
@@ -298,9 +303,11 @@ void addInput(Block *b, long int value) {
     if (b->inputsSize == 0) {
         b->inputsSize = 4;
         b->inputs = malloc(sizeof(long int) * b->inputsSize);
+        Check_alloc_fail(b->inputs, exit(1))
     } else if (b->inputCount >= b->inputsSize) {
         b->inputsSize *= 2;
         b->inputs = realloc(b->inputs, sizeof(long int) * b->inputsSize);
+        Check_alloc_fail(b->inputs, exit(1))
     }
     b->inputs[b->inputCount++] = value;
 }
@@ -310,9 +317,11 @@ void addOutput(Block *b, long int value) {
     if (b->outputsSize == 0) {
         b->outputsSize = 4;
         b->outputs = malloc(sizeof(long int) * b->outputsSize);
+        Check_alloc_fail(b->outputs, exit(1))
     } else if (b->outputCount >= b->outputsSize) {
         b->outputsSize *= 2;
         b->outputs = realloc(b->outputs, sizeof(long int) * b->outputsSize);
+        Check_alloc_fail(b->outputs, exit(1))
     }
     b->outputs[b->outputCount++] = value;
 }
@@ -404,7 +413,7 @@ Block *CreateBlock(__uint8_t id, float x, float y, float z) {
     if (BlockCount >= START_BLOCKS) return NULL;
 
     Block *b = malloc(extraDataSize(id));
-    if (!b) return NULL;
+    Check_alloc_fail(B, return NULL)
     
     // Initialize the block
     memset(b, 0, extraDataSize(id));
@@ -457,10 +466,7 @@ void parseBlocks(const char *input, const char *owner) {
             if (semi) {
                 int len = (int)(semi - ptr);
                 char *buffer = malloc(len + 1); // Dynamic buffer allocation
-                if (!buffer) {
-                    fprintf(stderr, "Error: Failed to allocate memory for buffer\n");
-                    break;
-                }
+                Check_alloc_fail(buffer, break)
                 memcpy(buffer, ptr, len);
                 buffer[len] = '\0';
 
@@ -639,10 +645,7 @@ int main(int argc, char *argv[]) {
     if (q1) {
         size_t blockDataLen = q1 - input;
         char *blockData = malloc(blockDataLen + 1);
-        if (!blockData) {
-            fprintf(stderr, "Error: Failed to allocate memory for block data\n");
-            return 1;
-        }
+        Check_alloc_fail(blockData, return 1)
         strncpy(blockData, input, blockDataLen);
         blockData[blockDataLen] = '\0';
         parseBlocks(blockData, "Goldie323");
