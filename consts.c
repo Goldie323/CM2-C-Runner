@@ -23,7 +23,7 @@ enum {
 
 enum {
     START_BLOCKS = 1024,
-    MAX_THREADS = 3 //doesn't include main so for the real amount of threads add 1 and you get the real amount including main.
+    THREAD_COUNT = 3 //doesn't include main so for the real amount of threads add 1 and you get the real amount including main.
 };
 
 typedef struct {
@@ -36,6 +36,11 @@ typedef struct {
     float x, y, z;
     __uint8_t ID;
 } Block;
+
+typedef struct {
+    Block Base;
+    bool *PrevInputs;
+} FlipFlopBlock;
 
 typedef struct {
     Block Base; //this is for block ID 6

@@ -16,7 +16,7 @@ bool *state = stateArr;
 bool *preState = preStateArr;
 
 
-thrd_t threads[MAX_THREADS];
+thrd_t threads[THREAD_COUNT];
 atomic_uint_least64_t taskIndex;
 atomic_uint_least64_t blocksRemaining;
 
@@ -66,13 +66,20 @@ bool ButtonGate(long int index) {
     return false;
 }
 
-bool flipFlopButton(long int index) {
+bool FlipFlopGate(long int index) {
+    Block *b = blocks[index];
+    FlipFlopBlock *Flipper = (flipFlopBlock *)b
     const long int *inputs = blocks[index]->inputs;
     long int inputCount = blocks[index]->inputCount;
+    bool ReturnState = state[index];
     for (long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return !state[index];
+        if (state[inputs[i]]) {
+            ReturnState = !state[index];
+            break;
+        }
     }
-    return state[index];
+
+    if 
 }
 
 // logical or but gui handles led
@@ -214,7 +221,7 @@ void initGateFunctions() {
     gateFunctions[2] = orGate;
     gateFunctions[3] = xorGate;
     gateFunctions[4] = ButtonGate;
-    gateFunctions[5] = flipFlopButton;
+    gateFunctions[5] = FlipFlopGate;
     gateFunctions[6] = ledGate;
     gateFunctions[7] = soundGate;
     gateFunctions[8] = conductorGate;
@@ -380,6 +387,7 @@ void removeBlock(long int index) {
 
 size_t extraDataSize(__uint8_t id) {
     switch (id) {
+        case 5; return sizeof(FlipFlopBlock);
         case 6: return sizeof(LedBlock);
         case 7: return sizeof(SoundBlock); 
         case 12: return sizeof(RandomBlock);
@@ -392,7 +400,7 @@ size_t extraDataSize(__uint8_t id) {
     }
 }
 
-Block *CreateBlock(__uint8_t id, float x, float y, float z, bool initialState) {
+Block *CreateBlock(__uint8_t id, float x, float y, float z) {
     if (BlockCount >= START_BLOCKS) return NULL;
 
     Block *b = malloc(extraDataSize(id));
@@ -457,6 +465,10 @@ void parseBlocks(const char *input, const char *owner) {
                 buffer[len] = '\0';
 
                 switch (id) {
+                    case 5; { // Flip Flop Block
+                        FlipFlopBlock *flipFlopBlock = (FlipFlopBlock *)blocks[BlockCount];
+                        flipFlopBlock->PrevInputs = NULL;
+                    }
                     case 6: { // LED Block
                         LedBlock *ledBlock = (LedBlock *)blocks[BlockCount];
                         ledBlock->RedAmount = 255;
@@ -614,7 +626,7 @@ void sleepForTick(double seconds) {
 
 int main(int argc, char *argv[]) {
 
-    for (long int i = 0; i < MAX_THREADS; i++) {
+    for (long int i = 0; i < THREAD_COUNT; i++) {
         thrd_create(&threads[i], workerThread, NULL);
     }
 
@@ -680,8 +692,8 @@ int main(int argc, char *argv[]) {
     atomic_store(&blocksRemaining, 0); // Reset to 0 to allow threads to exit
 
     // Join threads
-    for (long int i = 0; i < MAX_THREADS; i++) {
-        printf("\rJoining threads %ld/%ld", i+1, MAX_THREADS);
+    for (long int i = 0; i < THREAD_COUNT; i++) {
+        printf("\rJoining threads %ld/%ld", i+1, THREAD_COUNT);
         fflush(stdout);
         thrd_join(threads[i], NULL);
     }
