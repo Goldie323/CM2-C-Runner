@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <time.h>
-#include "consts.c"
+#include "consts.h"
 
 Block *blocks[START_BLOCKS];
 unsigned long int BlockCount = 0;
@@ -467,12 +467,12 @@ void parseBlocks(const char *input, const char *owner) {
                 buffer[len] = '\0';
 
                 switch (id) {
-                    case 5: { // Flip Flop Block
+                    case FLIPFLOP: { // Flip Flop Block
                         FlipFlopBlock *flipFlopBlock = (FlipFlopBlock *)blocks[BlockCount];
                         flipFlopBlock->PrevXor = 1;
                         break;
                     }
-                    case 6: { // LED Block
+                    case LED: { // LED Block
                         LedBlock *ledBlock = (LedBlock *)blocks[BlockCount];
                         ledBlock->RedAmount = 255;
                         ledBlock->GreenAmount = 255;
@@ -493,7 +493,7 @@ void parseBlocks(const char *input, const char *owner) {
                         if (count >= 6) ledBlock->analog = (values[5] != 0);
                         break;
                     }
-                    case 7: { // Sound Block
+                    case SOUND: { // Sound Block
                         SoundBlock *soundBlock = (SoundBlock *)blocks[BlockCount];
                         soundBlock->Frequency = 44000;
                         soundBlock->Instrument = 0;
@@ -504,7 +504,7 @@ void parseBlocks(const char *input, const char *owner) {
                         if (count >= 2) soundBlock->Instrument = values[1];
                         break;
                     }
-                    case 12: { // Random Block
+                    case RANDOM: { // Random Block
                         RandomBlock *randomBlock = (RandomBlock *)blocks[BlockCount];
                         randomBlock->Probability = 50;
                         unsigned long int value;
@@ -512,7 +512,7 @@ void parseBlocks(const char *input, const char *owner) {
                             randomBlock->Probability = value;
                         break;
                     }
-                    case 13: { // Char Block
+                    case TEXT: { // Text Block
                         CharBlock *charBlock = (CharBlock *)blocks[BlockCount];
                         charBlock->Character = 'A';
                         unsigned long int value;
@@ -520,7 +520,7 @@ void parseBlocks(const char *input, const char *owner) {
                             charBlock->Character = (char)value;
                         break;
                     }
-                    case 14: { // Tile Block
+                    case TILE: { // Tile Block
                         TileBlock *tileBlock = (TileBlock *)blocks[BlockCount];
                         tileBlock->RedAmount = 255;
                         tileBlock->GreenAmount = 255;
@@ -539,7 +539,7 @@ void parseBlocks(const char *input, const char *owner) {
                         if (count >= 5) tileBlock->Collision = (values[4] != 0);
                         break;
                     }
-                    case 16: { // Delay Block
+                    case DELAY: { // Delay Block
                         DelayBlock *delayBlock = (DelayBlock *)blocks[BlockCount];
                         delayBlock->DelayTime = 1;
                         unsigned long int value;
@@ -547,7 +547,7 @@ void parseBlocks(const char *input, const char *owner) {
                             delayBlock->DelayTime = value;
                         break;
                     }
-                    case 17: { // Antenna Block
+                    case ANTENNA: { // Antenna Block
                         AntennaBlock *antennaBlock = (AntennaBlock *)blocks[BlockCount];
                         antennaBlock->Signal = 0;
                         antennaBlock->Global = false;
@@ -562,7 +562,7 @@ void parseBlocks(const char *input, const char *owner) {
                         if (count >= 3) antennaBlock->Global = (global != 0);
                         break;
                     }
-                    case 19: { // LED Mixer Block
+                    case LED_MIXER: { // LED Mixer Block
                         LedMixerBlock *ledMixerBlock = (LedMixerBlock *)blocks[BlockCount];
                         ledMixerBlock->Additive = true;
                         unsigned long int value;
@@ -573,7 +573,7 @@ void parseBlocks(const char *input, const char *owner) {
                     default:
                         break;
                 }
-                free(buffer); // Free the dynamically allocated buffer
+                free(buffer);
                 ptr = semi;
             }
         }
