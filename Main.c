@@ -5,242 +5,19 @@
 #include <stdbool.h>
 #include <string.h>
 #include <time.h>
-#include "consts.h"
-
-Block *blocks[START_BLOCKS];
-unsigned long int BlockCount = 0;
-
-bool stateArr[START_BLOCKS];
-bool preStateArr[START_BLOCKS];
-bool *state = stateArr;
-bool *preState = preStateArr;
-
+#include "Consts.h"
+#include "GateFuncs.h"
 
 thrd_t threads[THREAD_COUNT];
 atomic_uint_least64_t taskIndex;
 atomic_uint_least64_t blocksRemaining;
 
 
-typedef bool (*GateFunc)(unsigned long int index);
-
 #define Check_alloc_fail(var, action)  \
 if (!var) {  \
     fprintf(stderr, "Error: Failed to allocate memory for buffer\n");   \
     action;  \
 }
-
-bool InfXor(const unsigned long int *inputs,  unsigned long int inputCount) {
-    bool result = false;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) result = !result;
-    }
-    return result;
-}
-
-bool norGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return false;
-    }
-    return true;
-}
-
-bool andGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (!state[inputs[i]]) return false;
-    }
-    return true;
-}
-
-bool orGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
-    }
-    return false;
-}
-
-bool xorGate(unsigned long int index) {
-    return InfXor(blocks[index]->inputs, blocks[index]->inputCount);
-}
-
-// gui will change the button state and then every tick will just turn it off and no inputs will change that
-bool ButtonGate(unsigned long int index) {
-    return false;
-}
-
-bool FlipFlopGate(unsigned long int index) {
-    Block *b = blocks[index];
-    FlipFlopBlock *Flipper = (FlipFlopBlock *)b;
-    bool CurrXor = InfXor(b->inputs, b->inputCount);
-    bool OutputState = state[index];
-    if (!Flipper->PrevXor&CurrXor)  OutputState = !OutputState;
-    Flipper->PrevXor = CurrXor;
-    return OutputState;
-}
-
-// logical or but gui handles led
-bool ledGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
-    }
-    return false;
-}
-
-// logical or but gui handles sound
-bool soundGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
-    }
-    return false;
-}
-
-// this needs to do a linear search of all the blocks to find the ones next to it and do an or operation to find it's current value
-bool conductorGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
-    }
-    return false;
-}
-
-bool customGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
-    }
-    return false;
-}
-
-bool nandGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (!state[inputs[i]]) return true;
-    }
-    return false;
-}
-
-bool xnorGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    bool result = true;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) result = !result;
-    }
-    return result;
-}
-
-bool randomGate(unsigned long int index) {
-    Block *b = blocks[index];
-    RandomBlock *rb = (RandomBlock *)b;
-    __uint8_t Probability = rb->Probability; // 0 to 100
-    if (Probability == 0) return false;
-    if (Probability >= 100) return true;
-
-    unsigned long int randomNumber = rand() / (RAND_MAX + 1.0) * 101;
-    if (randomNumber < Probability) return true;
-    return false;
-}
-
-bool TextGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
-    }
-    return false;
-}
-
-// kind of like button, gui might tell it to be on but inputs don't change it and so every tick just turn it off
-bool TileGate(unsigned long int index) {
-    return false;
-}
-
-// this also requires a search, a better one but still need to search and it needs to check all it's outputs and check if they're a node and if they are, run the same logic on them. Needs recursion :sob:
-bool nodeGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
-    }
-    return false;
-}
-
-
-bool delayBlock(unsigned long int index) {
-    //the original code was AI and dumb
-    return false;
-}
-
-
-// need to do a linear search and check for all the globals/same user and then if ANY of them are on then it'll turn on, otherwise it's based on the OR of the inputs
-bool antennaGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
-    }
-    return false;
-}
-
-// another recursive one based on xyz and so I don't wanna do this yet because it's require a linear search of all the blocks and I don't wanna deal with that yes
-bool conductor2Gate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
-    }
-    return false;
-}
-
-// does a logic or and the rest is handled by GUI
-bool ledMixerGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
-    }
-    return false;
-}
-
-GateFunc gateFunctions[256] = {NULL};
-
-void initGateFunctions() {
-    gateFunctions[0] = norGate;
-    gateFunctions[1] = andGate;
-    gateFunctions[2] = orGate;
-    gateFunctions[3] = xorGate;
-    gateFunctions[4] = ButtonGate;
-    gateFunctions[5] = FlipFlopGate;
-    gateFunctions[6] = ledGate;
-    gateFunctions[7] = soundGate;
-    gateFunctions[8] = conductorGate;
-    gateFunctions[9] = customGate;
-    gateFunctions[10] = nandGate;
-    gateFunctions[11] = xnorGate;
-    gateFunctions[12] = randomGate;
-    gateFunctions[13] = TextGate;
-    gateFunctions[14] = TileGate;
-    gateFunctions[15] = nodeGate;
-    gateFunctions[16] = delayBlock;
-    gateFunctions[17] = antennaGate;
-    gateFunctions[18] = conductor2Gate;
-    gateFunctions[19] = ledMixerGate;
-}
-
-
-void computeBlock(unsigned long int index);
 
 atomic_bool terminateThreads = false;
 int workerThread(void *arg) {
@@ -255,21 +32,6 @@ int workerThread(void *arg) {
         atomic_fetch_sub(&blocksRemaining, 1);
     }
     return 0;
-}
-void computeBlock(unsigned long int index) {
-    Block *b = blocks[index];
-    if (!b) {
-        return; // skip null block
-    }
-
-    GateFunc func = gateFunctions[b->ID];
-    if (!func) {
-        return;
-    }
-
-    bool result = func(index);
-    
-    preState[index] = result;
 }
 
 void tickCalc() {
@@ -653,8 +415,6 @@ int main(unsigned long int argc, char *argv[]) {
 
         parseConnections(q1+1);
     }
-
-    initGateFunctions();
     
     // Get simulation parameters from command line arguments
     //unsigned long int totalTicks = atol(argv[2]);

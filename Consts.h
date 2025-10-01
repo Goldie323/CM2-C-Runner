@@ -1,3 +1,9 @@
+#ifndef Consts_h
+#define Consts_h
+
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdint.h>
 enum {
     NOR,
     AND,
@@ -93,3 +99,5 @@ typedef struct {
     Block Base; //this is for block ID 19
     bool Additive; // 1 for additive blending, 0 for subtractive blending.
 } LedMixerBlock; // these are all just for GUI and don't affect logic
+
+#endif
