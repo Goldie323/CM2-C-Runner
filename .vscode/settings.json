@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "threads.h": "c",
-        "consts.h": "c",
-        "stdio.h": "c",
-        "stdint.h": "c",
-        "string.h": "c"
-    }
-}
