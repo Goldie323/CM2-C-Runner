@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 #include "Consts.h"
 
 Block *blocks[START_BLOCKS];
@@ -18,8 +19,6 @@ bool InfXor(const unsigned long int *inputs,  unsigned long int inputCount) {
     }
     return result;
 }
-
-typedef bool (*GateFunc)(unsigned long int index);
 
 bool norGate(unsigned long int index) {
     const unsigned long int *inputs = blocks[index]->inputs;

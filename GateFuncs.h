@@ -1,7 +1,10 @@
 #ifndef GateFuncs_h
 #define GateFuncs_h
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 #include "Consts.h"
 
 // Global variables
@@ -9,12 +12,6 @@ extern Block *blocks[START_BLOCKS];
 extern unsigned long int BlockCount;
 extern bool *state;
 extern bool *preState;
-
-// Function type definition for gate functions
-typedef bool (*GateFunc)(unsigned long int index);
-
-// Utility functions
-bool InfXor(const unsigned long int *inputs, unsigned long int inputCount);
 
 // Gate functions
 bool norGate(unsigned long int index);
@@ -38,7 +35,6 @@ bool antennaGate(unsigned long int index);
 bool conductor2Gate(unsigned long int index);
 bool ledMixerGate(unsigned long int index);
 
-// Main computation function
 void computeBlock(unsigned long int index);
 
 #endif
