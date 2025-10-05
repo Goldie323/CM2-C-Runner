@@ -3,34 +3,32 @@
 #include "Consts.h"
 #include "GateFuncs.h"
 #include "BlockCreation.h"
-// fix these functions, they kind of suck and are fully vibe coded and probably aren't good. Fix them later and maybe add a parseString function that does the whole thing, also add support for 
-void parseBlocks(const char *input, const char *owner) {
+// fix these functions, they kind of suck and are fully vibe coded and probably aren't good. Fix them later and maybe add a parseString function that does the whole thing, also add support for
+void parseBlocks(const char *input, __uint8_t owner) {
     const char *ptr = input;
     while (*ptr && *ptr != '?') {
         unsigned long int idTmp, sTmp;
         long int x, y, z;
         unsigned long int charsRead;
-
+    
         // Read basic block info safely
-        if (sscanf(ptr, "%d,%d,%f,%f,%f%n", &idTmp, &sTmp, &x, &y, &z, &charsRead) < 5)
+        if (sscanf(ptr, "%d,%d,%ld,%ld,%ld%n", &idTmp, &sTmp, &x, &y, &z, &charsRead) < 5)
             break;
-
         __uint8_t id = (__uint8_t)idTmp;
         bool s = (sTmp != 0);
 
         ptr += charsRead;
-
+        
         if (BlockCount >= START_BLOCKS) {
             fprintf(stderr, "Error: too many blocks (max=%d)\n", START_BLOCKS);
             break;
         }
 
         // Create the block
-        Block *b = CreateBlock(id, x, y, z);
+        Block *b = CreateBlock(id, x, y, z, owner);
         if (!b) break;
 
         blocks[BlockCount] = b;
-
         // Read extra data if present
         if (*ptr == ',') {
             ptr++; // skip comma
@@ -131,12 +129,8 @@ void parseBlocks(const char *input, const char *owner) {
 
                         unsigned long int signal, global;
                         unsigned long int count = sscanf(buffer, "%d+%d", &signal, &global);
-                        if (count >= 1) {
-                            strncpy(antennaBlock->Owner, owner, sizeof(antennaBlock->Owner) - 1);
-                            antennaBlock->Owner[sizeof(antennaBlock->Owner) - 1] = '\0';
-                        }
-                        if (count >= 2) antennaBlock->Signal = signal;
-                        if (count >= 3) antennaBlock->Global = (global != 0);
+                        if (count >= 1) antennaBlock->Signal = signal;
+                        if (count >= 2) antennaBlock->Global = (global != 0);
                         break;
                     }
                     case LED_MIXER: { // LED Mixer Block
@@ -154,7 +148,7 @@ void parseBlocks(const char *input, const char *owner) {
                 ptr = semi;
             }
         }
-
+        
         if (*ptr == ';') ptr++;
 
         // Update global arrays
@@ -164,7 +158,6 @@ void parseBlocks(const char *input, const char *owner) {
     }
 }
 
-// Update parseConnections to use addInput/addOutput
 void parseConnections(const char *input) {
     const char *ptr = input;
     while (*ptr && *ptr != '?') {
@@ -192,5 +185,20 @@ void parseConnections(const char *input) {
 
         addOutput(src, to);
         addInput(dst, from);
+    }
+}
+
+void parseFull(const char *input, __uint8_t owner) {
+    const char *q1 = strchr(input, '?');
+    if (q1) {
+        size_t blockDataLen = q1 - input;
+        char *blockData = malloc(blockDataLen + 1);
+        Check_alloc_fail(blockData, exit(1))
+        strncpy(blockData, input, blockDataLen);
+        blockData[blockDataLen] = '\0';
+        parseBlocks(blockData, owner);
+        free(blockData);
+
+        parseConnections(q1+1);
     }
 }

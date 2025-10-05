@@ -9,7 +9,7 @@ if (!var) {  \
 }
 
 void addInput(Block *b, unsigned long int value) {
-    if (!b) return; // Safety check for null pounsigned long inter
+    if (!b) return;
     if (b->inputsSize == 0) {
         b->inputsSize = 4;
         b->inputs = malloc(sizeof(unsigned long int) * b->inputsSize);
@@ -23,7 +23,7 @@ void addInput(Block *b, unsigned long int value) {
 }
 
 void addOutput(Block *b, unsigned long int value) {
-    if (!b) return; // Safety check for null pounsigned long inter
+    if (!b) return;
     if (b->outputsSize == 0) {
         b->outputsSize = 4;
         b->outputs = malloc(sizeof(unsigned long int) * b->outputsSize);
@@ -119,13 +119,12 @@ size_t extraDataSize(__uint8_t id) {
     }
 }
 
-Block *CreateBlock(__uint8_t id, long int x, long int y, long int z) {
+Block *CreateBlock(__uint8_t id, long int x, long int y, long int z, __uint8_t owner) {
     if (BlockCount >= START_BLOCKS) return NULL;
 
     Block *b = malloc(extraDataSize(id));
     Check_alloc_fail(b, return NULL)
     
-    // Initialize the block
     memset(b, 0, extraDataSize(id));
     b->ID = id;
     b->x = x;
@@ -137,6 +136,7 @@ Block *CreateBlock(__uint8_t id, long int x, long int y, long int z) {
     b->outputsSize = 0;
     b->inputCount = 0;
     b->outputCount = 0;
+    b->OwnerID = owner;
 
     return b;
 }

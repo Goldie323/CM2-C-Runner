@@ -51,7 +51,6 @@ bool xorGate(unsigned long int index) {
     return InfXor(blocks[index]->inputs, blocks[index]->inputCount);
 }
 
-// gui will change the button state and then every tick will just turn it off and no inputs will change that
 bool ButtonGate(unsigned long int index) {
     return false;
 }
@@ -66,7 +65,6 @@ bool FlipFlopGate(unsigned long int index) {
     return OutputState;
 }
 
-// logical or but gui handles led
 bool ledGate(unsigned long int index) {
     const unsigned long int *inputs = blocks[index]->inputs;
     unsigned long int inputCount = blocks[index]->inputCount;
@@ -76,7 +74,6 @@ bool ledGate(unsigned long int index) {
     return false;
 }
 
-// logical or but gui handles sound
 bool soundGate(unsigned long int index) {
     const unsigned long int *inputs = blocks[index]->inputs;
     unsigned long int inputCount = blocks[index]->inputCount;
@@ -160,9 +157,8 @@ bool nodeGate(unsigned long int index) {
     return false;
 }
 
-
+// gonna need to fix this code
 bool delayBlock(unsigned long int index) {
-    //the original code was AI and dumb
     return false;
 }
 

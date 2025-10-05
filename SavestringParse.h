@@ -7,7 +7,8 @@
 #include "GateFuncs.h"
 #include "BlockCreation.h"
 
-void parseBlocks(const char *input, const char *username);
+void parseBlocks(const char *input, __uint8_t owner);
 void parseConnections(const char *input);
+void parseFull(const char *input, __uint8_t owner);
 
 #endif
