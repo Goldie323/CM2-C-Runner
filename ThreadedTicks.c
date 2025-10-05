@@ -30,7 +30,7 @@ int workerThread(void *arg) {
     return 0;
 }
 
-void tickCalc() {
+void threadedTickCalc() {
     atomic_store(&taskIndex, 0);
     atomic_store(&blocksRemaining, BlockCount);
 
@@ -43,9 +43,27 @@ void tickCalc() {
     while (atomic_load(&blocksRemaining) > 0) thrd_yield();
 }
 
+void TickCalc() {
+    unsigned long int taskIndex = 0;
+    unsigned long int blocksRemaining = BlockCount;
+
+    unsigned long int i;
+    while ((i = taskIndex++) < BlockCount) {
+        computeBlock(i);
+        blocksRemaining--;
+    }
+
+    return;
+}
+
 void tick() {
     // add before tick operations like editing blocks and such
-    tickCalc();
+    if (ActiveCount > 0) {
+        threadedTickCalc();
+    }
+    else {
+        TickCalc();
+    }
     bool *tmp = state;
     state = preState;
     preState = tmp;
