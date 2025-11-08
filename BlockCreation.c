@@ -1,23 +1,16 @@
 #include <stdio.h>
+#include "Util.h"
 #include "Consts.h"
 #include "GateFuncs.h"
-
-#define Check_alloc_fail(var, action)  \
-if (!var) {  \
-    fprintf(stderr, "Error: Failed to allocate memory for buffer\n");   \
-    action;  \
-}
 
 void addInput(Block *b, unsigned long int value) {
     if (!b) return;
     if (b->inputsSize == 0) {
         b->inputsSize = 4;
-        b->inputs = malloc(sizeof(unsigned long int) * b->inputsSize);
-        Check_alloc_fail(b->inputs, exit(1))
+        b->inputs = smalloc(sizeof(unsigned long int) * b->inputsSize);
     } else if (b->inputCount >= b->inputsSize) {
         b->inputsSize *= 2;
-        b->inputs = realloc(b->inputs, sizeof(unsigned long int) * b->inputsSize);
-        Check_alloc_fail(b->inputs, exit(1))
+        b->inputs = srealloc(b->inputs, sizeof(unsigned long int) * b->inputsSize);
     }
     b->inputs[b->inputCount++] = value;
 }
@@ -26,12 +19,10 @@ void addOutput(Block *b, unsigned long int value) {
     if (!b) return;
     if (b->outputsSize == 0) {
         b->outputsSize = 4;
-        b->outputs = malloc(sizeof(unsigned long int) * b->outputsSize);
-        Check_alloc_fail(b->outputs, exit(1))
+        b->outputs = smalloc(sizeof(unsigned long int) * b->outputsSize);
     } else if (b->outputCount >= b->outputsSize) {
         b->outputsSize *= 2;
-        b->outputs = realloc(b->outputs, sizeof(unsigned long int) * b->outputsSize);
-        Check_alloc_fail(b->outputs, exit(1))
+        b->outputs = srealloc(b->outputs, sizeof(unsigned long int) * b->outputsSize);
     }
     b->outputs[b->outputCount++] = value;
 }
@@ -122,8 +113,7 @@ size_t extraDataSize(__uint8_t id) {
 Block *CreateBlock(__uint8_t id, long int x, long int y, long int z, __uint8_t owner) {
     if (BlockCount >= START_BLOCKS) return NULL;
 
-    Block *b = malloc(extraDataSize(id));
-    Check_alloc_fail(b, return NULL)
+    Block *b = smalloc(extraDataSize(id));
     
     memset(b, 0, extraDataSize(id));
     b->ID = id;
