@@ -5,12 +5,6 @@
 #include "Consts.h"
 #include "GateFuncs.h"
 
-#define Check_alloc_fail(var, action)  \
-if (!var) {  \
-    fprintf(stderr, "Error: Failed to allocate memory for buffer\n");   \
-    action;  \
-}
-
 void addInput(Block *b, unsigned long int value);
 void addOutput(Block *b, unsigned long int value);
 void removeInput(Block *b, unsigned long int value);

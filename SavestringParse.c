@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdio.h>
+#include "Util.h"
 #include "Consts.h"
 #include "GateFuncs.h"
 #include "BlockCreation.h"
@@ -36,8 +37,7 @@ void parseBlocks(const char *input, __uint8_t owner) {
             if (!semi) semi = strchr(ptr, '?');
             if (semi) {
                 unsigned long int len = (unsigned long int)(semi - ptr);
-                char *buffer = malloc(len + 1); // Dynamic buffer allocation
-                Check_alloc_fail(buffer, break)
+                char *buffer = smalloc(len + 1); // Dynamic buffer allocation
                 memcpy(buffer, ptr, len);
                 buffer[len] = '\0';
 
@@ -192,8 +192,7 @@ void parseFull(const char *input, __uint8_t owner) {
     const char *q1 = strchr(input, '?');
     if (q1) {
         size_t blockDataLen = q1 - input;
-        char *blockData = malloc(blockDataLen + 1);
-        Check_alloc_fail(blockData, exit(1))
+        char *blockData = smalloc(blockDataLen + 1);
         strncpy(blockData, input, blockDataLen);
         blockData[blockDataLen] = '\0';
         parseBlocks(blockData, owner);
