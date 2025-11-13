@@ -68,19 +68,19 @@ void addConnection(unsigned long int from, unsigned long int to) {
 }
 
 void removeBlock(unsigned long int index) {
-    if (index < 0 || index >= BlockCount) return;
+    if (index < 0 || index >= blockCount) return;
 
     Block *b = blocks[index];
 
     for (unsigned long int i = 0; i < b->inputCount; i++) {
         unsigned long int inputIdx = b->inputs[i];
-        if (inputIdx >= 0 && inputIdx < BlockCount) {
+        if (inputIdx >= 0 && inputIdx < blockCount) {
             removeOutput(blocks[inputIdx], index);
         }
     }
     for (unsigned long int i = 0; i < b->outputCount; i++) {
         unsigned long int outputIdx = b->outputs[i];
-        if (outputIdx >= 0 && outputIdx < BlockCount) {
+        if (outputIdx >= 0 && outputIdx < blockCount) {
             removeInput(blocks[outputIdx], index);
         }
     }
@@ -89,7 +89,7 @@ void removeBlock(unsigned long int index) {
     free(b->outputs);
     free(b);
 
-    BlockCount--;
+    blockCount--;
 
     blocks[index] = NULL;
 
@@ -111,8 +111,29 @@ size_t extraDataSize(__uint8_t id) {
 }
 
 Block *CreateBlock(__uint8_t id, long int x, long int y, long int z, __uint8_t owner) {
-    if (BlockCount >= START_BLOCKS) return NULL;
-
+    if (blockCount >= blockCapacity) {
+        blockCapacity *= 2;
+        blocks = srealloc(blocks, blockCapacity);
+        state = srealloc(state, blockCapacity);
+        /*
+            faster than realloc because of the possibilty of it copying
+            the data to the new allocation and the current state in preState
+            doesn't matter only state matters and preState is used for
+            calculations which currently aren't being done as blocks are
+            added before the simulation or inbetween ticks meaning that
+            doing it this way will never remove necassary data and best
+            case would be check if it can grow in place and do it and 
+            fall back to free and malloc but there's nothing like that
+            and it's a lot to make something custom just for this since
+            the custom thing would need to handle system calls and would
+            likely need possibly even a custom kernel that handles it and
+            that'd only be for a tiny increase in efficiency and speed in
+            the case that it can grow in place.
+        */
+        free(preState); 
+        preState = smalloc(blockCapacity);
+    }
+        
     Block *b = smalloc(extraDataSize(id));
     
     memset(b, 0, extraDataSize(id));

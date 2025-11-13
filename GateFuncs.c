@@ -3,14 +3,21 @@
 #include <stdbool.h>
 #include <string.h>
 #include "Consts.h"
+#include "Util.h"
 
-Block *blocks[START_BLOCKS];
-unsigned long int BlockCount = 0;
+Block **blocks = NULL;
+size_t blockCount = 0;
+size_t blockCapacity = 0;
 
-bool stateArr[START_BLOCKS];
-bool preStateArr[START_BLOCKS];
-bool *state = stateArr;
-bool *preState = preStateArr;
+bool *state = NULL;
+bool *preState = NULL;
+
+void initializeBlocks(size_t startCap) {
+    if (!blocks) blocks = smalloc(startCap);
+    if (!state) state = smalloc(startCap);
+    if (!preState) preState = smalloc(startCap);
+    blockCapacity = startCap;
+}
 
 bool InfXor(const unsigned long int *inputs,  unsigned long int inputCount) {
     bool result = false;

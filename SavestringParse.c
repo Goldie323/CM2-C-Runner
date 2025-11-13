@@ -20,7 +20,7 @@ void parseBlocks(const char *input, __uint8_t owner) {
 
         ptr += charsRead;
         
-        if (BlockCount >= START_BLOCKS) {
+        if (blockCount >= START_BLOCKS) {
             fprintf(stderr, "Error: too many blocks (max=%d)\n", START_BLOCKS);
             break;
         }
@@ -29,7 +29,7 @@ void parseBlocks(const char *input, __uint8_t owner) {
         Block *b = CreateBlock(id, x, y, z, owner);
         if (!b) break;
 
-        blocks[BlockCount] = b;
+        blocks[blockCount] = b;
         // Read extra data if present
         if (*ptr == ',') {
             ptr++; // skip comma
@@ -43,12 +43,12 @@ void parseBlocks(const char *input, __uint8_t owner) {
 
                 switch (id) {
                     case FLIPFLOP: { // Flip Flop Block
-                        FlipFlopBlock *flipFlopBlock = (FlipFlopBlock *)blocks[BlockCount];
+                        FlipFlopBlock *flipFlopBlock = (FlipFlopBlock *)blocks[blockCount];
                         flipFlopBlock->PrevXor = 1;
                         break;
                     }
                     case LED: { // LED Block
-                        LedBlock *ledBlock = (LedBlock *)blocks[BlockCount];
+                        LedBlock *ledBlock = (LedBlock *)blocks[blockCount];
                         ledBlock->RedAmount = 255;
                         ledBlock->GreenAmount = 255;
                         ledBlock->BlueAmount = 255;
@@ -69,7 +69,7 @@ void parseBlocks(const char *input, __uint8_t owner) {
                         break;
                     }
                     case SOUND: { // Sound Block
-                        SoundBlock *soundBlock = (SoundBlock *)blocks[BlockCount];
+                        SoundBlock *soundBlock = (SoundBlock *)blocks[blockCount];
                         soundBlock->Frequency = 44000;
                         soundBlock->Instrument = 0;
 
@@ -80,7 +80,7 @@ void parseBlocks(const char *input, __uint8_t owner) {
                         break;
                     }
                     case RANDOM: { // Random Block
-                        RandomBlock *randomBlock = (RandomBlock *)blocks[BlockCount];
+                        RandomBlock *randomBlock = (RandomBlock *)blocks[blockCount];
                         randomBlock->Probability = 50;
                         unsigned long int value;
                         if (sscanf(buffer, "%d", &value) == 1)
@@ -88,7 +88,7 @@ void parseBlocks(const char *input, __uint8_t owner) {
                         break;
                     }
                     case TEXT: { // Text Block
-                        CharBlock *charBlock = (CharBlock *)blocks[BlockCount];
+                        CharBlock *charBlock = (CharBlock *)blocks[blockCount];
                         charBlock->Character = 'A';
                         unsigned long int value;
                         if (sscanf(buffer, "%d", &value) == 1)
@@ -96,7 +96,7 @@ void parseBlocks(const char *input, __uint8_t owner) {
                         break;
                     }
                     case TILE: { // Tile Block
-                        TileBlock *tileBlock = (TileBlock *)blocks[BlockCount];
+                        TileBlock *tileBlock = (TileBlock *)blocks[blockCount];
                         tileBlock->RedAmount = 255;
                         tileBlock->GreenAmount = 255;
                         tileBlock->BlueAmount = 255;
@@ -115,7 +115,7 @@ void parseBlocks(const char *input, __uint8_t owner) {
                         break;
                     }
                     case DELAY: { // Delay Block
-                        DelayBlock *delayBlock = (DelayBlock *)blocks[BlockCount];
+                        DelayBlock *delayBlock = (DelayBlock *)blocks[blockCount];
                         delayBlock->DelayTime = 1;
                         unsigned long int value;
                         if (sscanf(buffer, "%d", &value) == 1)
@@ -123,7 +123,7 @@ void parseBlocks(const char *input, __uint8_t owner) {
                         break;
                     }
                     case ANTENNA: { // Antenna Block
-                        AntennaBlock *antennaBlock = (AntennaBlock *)blocks[BlockCount];
+                        AntennaBlock *antennaBlock = (AntennaBlock *)blocks[blockCount];
                         antennaBlock->Signal = 0;
                         antennaBlock->Global = false;
 
@@ -134,7 +134,7 @@ void parseBlocks(const char *input, __uint8_t owner) {
                         break;
                     }
                     case LED_MIXER: { // LED Mixer Block
-                        LedMixerBlock *ledMixerBlock = (LedMixerBlock *)blocks[BlockCount];
+                        LedMixerBlock *ledMixerBlock = (LedMixerBlock *)blocks[blockCount];
                         ledMixerBlock->Additive = true;
                         unsigned long int value;
                         if (sscanf(buffer, "%d", &value) == 1)
@@ -152,9 +152,9 @@ void parseBlocks(const char *input, __uint8_t owner) {
         if (*ptr == ';') ptr++;
 
         // Update global arrays
-        BlockCount++;
-        state[BlockCount - 1] = s;
-        preState[BlockCount - 1] = s;
+        blockCount++;
+        state[blockCount - 1] = s;
+        preState[blockCount - 1] = s;
     }
 }
 
@@ -170,8 +170,8 @@ void parseConnections(const char *input) {
 
         from--;
         to--;
-        if (from < 0 || from >= BlockCount || to < 0 || to >= BlockCount) {
-            fprintf(stderr, "Warning: Invalid connection %d->%d (BlockCount=%d), skipping\n", from, to, BlockCount);
+        if (from < 0 || from >= blockCount || to < 0 || to >= blockCount) {
+            fprintf(stderr, "Warning: Invalid connection %d->%d (blockCount=%d), skipping\n", from, to, blockCount);
             continue;
         }
 

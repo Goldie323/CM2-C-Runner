@@ -23,7 +23,7 @@ int workerThread(void *arg) {
         }
 
         unsigned long int i = atomic_fetch_add(&taskIndex, 1);
-        if (i >= BlockCount) break;
+        if (i >= blockCount) break;
         computeBlock(i);
         atomic_fetch_sub(&blocksRemaining, 1);
     }
@@ -32,10 +32,10 @@ int workerThread(void *arg) {
 
 void threadedTickCalc() {
     atomic_store(&taskIndex, 0);
-    atomic_store(&blocksRemaining, BlockCount);
+    atomic_store(&blocksRemaining, blockCount);
 
     unsigned long int i;
-    while ((i = atomic_fetch_add(&taskIndex, 1)) < BlockCount) {
+    while ((i = atomic_fetch_add(&taskIndex, 1)) < blockCount) {
         computeBlock(i);
         atomic_fetch_sub(&blocksRemaining, 1);
     }
@@ -45,10 +45,10 @@ void threadedTickCalc() {
 
 void TickCalc() {
     unsigned long int taskIndex = 0;
-    unsigned long int blocksRemaining = BlockCount;
+    unsigned long int blocksRemaining = blockCount;
 
     unsigned long int i;
-    while ((i = taskIndex++) < BlockCount) {
+    while ((i = taskIndex++) < blockCount) {
         computeBlock(i);
         blocksRemaining--;
     }
