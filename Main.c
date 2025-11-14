@@ -22,6 +22,7 @@ void sleepForTick(double seconds) {
 //also hopefully eventually it wouldn't even use that many command line args, hopefully the only arg at some point should just be a file that represents the current state of the simulation and then the program reads that and starts executing from that save point
 int main(unsigned long int argc, char *argv[]) {
     setThreadCount(4);
+    initializeBlocks(START_BLOCKS);
    
 
     const char *input;

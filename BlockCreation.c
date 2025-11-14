@@ -112,9 +112,10 @@ size_t extraDataSize(__uint8_t id) {
 
 Block *CreateBlock(__uint8_t id, long int x, long int y, long int z, __uint8_t owner) {
     if (blockCount >= blockCapacity) {
-        blockCapacity *= 2;
-        blocks = srealloc(blocks, blockCapacity);
-        state = srealloc(state, blockCapacity);
+        if (blockCapacity == 0) blockCapacity = START_BLOCKS;
+        else blockCapacity *= 2;
+        blocks = srealloc(blocks, blockCapacity * sizeof(Block *));
+        state = srealloc(state, blockCapacity * sizeof(bool));
         /*
             faster than realloc because of the possibilty of it copying
             the data to the new allocation and the current state in preState
@@ -130,8 +131,8 @@ Block *CreateBlock(__uint8_t id, long int x, long int y, long int z, __uint8_t o
             that'd only be for a tiny increase in efficiency and speed in
             the case that it can grow in place.
         */
-        free(preState); 
-        preState = smalloc(blockCapacity);
+        free(preState);
+        preState = smalloc(blockCapacity * sizeof(bool));
     }
         
     Block *b = smalloc(extraDataSize(id));

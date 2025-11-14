@@ -7,8 +7,6 @@
 #include "GateFuncs.h"
 
 void tick();
-void killOneThread();
-void createOneThread();
 void setThreadCount(__uint8_t count);
 void killAllThreads();
 

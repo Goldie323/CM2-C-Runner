@@ -13,10 +13,18 @@ bool *state = NULL;
 bool *preState = NULL;
 
 void initializeBlocks(size_t startCap) {
-    if (!blocks) blocks = smalloc(startCap);
-    if (!state) state = smalloc(startCap);
-    if (!preState) preState = smalloc(startCap);
+    if (!blocks) blocks = smalloc(startCap * sizeof(Block *));
+    if (!state) state = smalloc(startCap * sizeof(bool));
+    if (!preState) preState = smalloc(startCap * sizeof(bool));
     blockCapacity = startCap;
+    return;
+}
+
+void increaseBlocks(size_t capacity) {
+    blocks = srealloc(blocks, capacity * sizeof(Block *));
+    state = srealloc(state, capacity * sizeof(bool));
+    preState = srealloc(preState, capacity * sizeof(bool));
+    return;
 }
 
 bool InfXor(const unsigned long int *inputs,  unsigned long int inputCount) {

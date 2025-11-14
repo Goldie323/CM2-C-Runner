@@ -82,7 +82,6 @@ void killOneThread() {
 }
 
 void createOneThread() {
-    if (ActiveCount >= MAX_THREADS) return;
     thrd_create(&threads[ActiveCount], workerThread, (void *)(uintptr_t)ActiveCount);
     ActiveCount++;
 }
