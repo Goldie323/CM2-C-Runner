@@ -14,7 +14,7 @@ extern size_t blockCapacity;
 extern bool *state;
 extern bool *preState;
 
-void initializeBlocks(size_t startCap);
+void setBlockSize(size_t capacity);
 void computeBlock(unsigned long int index);
 
 #endif

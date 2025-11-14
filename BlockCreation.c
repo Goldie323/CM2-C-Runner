@@ -112,32 +112,12 @@ size_t extraDataSize(__uint8_t id) {
 
 Block *CreateBlock(__uint8_t id, long int x, long int y, long int z, __uint8_t owner) {
     if (blockCount >= blockCapacity) {
-        if (blockCapacity == 0) blockCapacity = START_BLOCKS;
-        else blockCapacity *= 2;
-        blocks = srealloc(blocks, blockCapacity * sizeof(Block *));
-        state = srealloc(state, blockCapacity * sizeof(bool));
-        /*
-            faster than realloc because of the possibilty of it copying
-            the data to the new allocation and the current state in preState
-            doesn't matter only state matters and preState is used for
-            calculations which currently aren't being done as blocks are
-            added before the simulation or inbetween ticks meaning that
-            doing it this way will never remove necassary data and best
-            case would be check if it can grow in place and do it and 
-            fall back to free and malloc but there's nothing like that
-            and it's a lot to make something custom just for this since
-            the custom thing would need to handle system calls and would
-            likely need possibly even a custom kernel that handles it and
-            that'd only be for a tiny increase in efficiency and speed in
-            the case that it can grow in place.
-        */
-        free(preState);
-        preState = smalloc(blockCapacity * sizeof(bool));
+        if (blockCapacity == 0) setBlockSize(START_BLOCKS);
+        else setBlockSize(blockCapacity*2);
     }
-        
-    Block *b = smalloc(extraDataSize(id));
+
+    Block *b = scalloc(extraDataSize(id));
     
-    memset(b, 0, extraDataSize(id));
     b->ID = id;
     b->x = x;
     b->y = y;

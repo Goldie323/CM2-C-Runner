@@ -12,18 +12,27 @@ size_t blockCapacity = 0;
 bool *state = NULL;
 bool *preState = NULL;
 
-void initializeBlocks(size_t startCap) {
-    if (!blocks) blocks = smalloc(startCap * sizeof(Block *));
-    if (!state) state = smalloc(startCap * sizeof(bool));
-    if (!preState) preState = smalloc(startCap * sizeof(bool));
-    blockCapacity = startCap;
-    return;
-}
-
-void increaseBlocks(size_t capacity) {
+void setBlockSize(size_t capacity) {
+    if (capacity<=blockCapacity) return; //Can't decrease or stay the same, only increases
     blocks = srealloc(blocks, capacity * sizeof(Block *));
     state = srealloc(state, capacity * sizeof(bool));
-    preState = srealloc(preState, capacity * sizeof(bool));
+    /*
+        faster than realloc because of the possibilty of it copying
+        the data to the new allocation and the current state in preState
+        doesn't matter only state matters and preState is used for
+        calculations which currently aren't being done as blocks are
+        added before the simulation or inbetween ticks meaning that
+        doing it this way will never remove necassary data and best
+        case would be check if it can grow in place and do it and 
+        fall back to free and malloc but there's nothing like that
+        and it's a lot to make something custom just for this since
+        the custom thing would need to handle system calls and would
+        likely need possibly even a custom kernel that handles it and
+        that'd only be for a tiny increase in efficiency and speed in
+        the case that it can grow in place.
+    */
+    if (preState) free(preState);
+    preState = smalloc(capacity * sizeof(bool));
     return;
 }
 
