@@ -2,45 +2,60 @@
 #include <stdatomic.h>
 #include "Consts.h"
 #include "GateFuncs.h"
+#include "Util.h"
 
 
 thrd_t threads[MAX_THREADS];
-__uint8_t ActiveCount = 0;
+uint_fast8_t ActiveCount = 0;
 
-atomic_uint_least64_t taskIndex;
-atomic_uint_least64_t blocksRemaining;
-
-bool terminateThreads = false;
-bool terminateOneThread = false;
+atomic_uint_fast64_t taskIndex;
+volatile bool working[MAX_THREADS];
+volatile bool work = false;
+volatile bool terminateAllThreads = false;
+volatile bool terminateThreads = false;
 int workerThread(void *arg) {
-    __uint8_t threadID = (__uint8_t)(uintptr_t)arg;
-    while (!terminateThreads) {
-
-        while (atomic_load(&blocksRemaining) == 0 && !(terminateOneThread || terminateThreads)) thrd_yield();
+    uint_fast8_t threadID = (uint_fast8_t)(uintptr_t)arg;
+    while (!terminateAllThreads) {
+        while (!work && !(terminateThreads || terminateAllThreads)) {
+            working[threadID] = false;
+            thrd_yield();
+        }
         
-        if (terminateOneThread && threadID == ActiveCount - 1) {
+        if (terminateThreads && threadID >= ActiveCount - 1) {
             return 0;
         }
 
+        if (terminateAllThreads) {
+            return 0;
+        }
+
+        if (!work) {
+            break;
+        }
+        working[threadID] = true;
         unsigned long int i = atomic_fetch_add(&taskIndex, 1);
         if (i >= blockCount) break;
         computeBlock(i);
-        atomic_fetch_sub(&blocksRemaining, 1);
     }
     return 0;
 }
 
+bool CheckWorking() {
+   for (uint_fast8_t i = 0; i < ActiveCount; i++) {
+      if (working[i]) return true;
+   }
+   return false;
+}
+
 void threadedTickCalc() {
     atomic_store(&taskIndex, 0);
-    atomic_store(&blocksRemaining, blockCount);
+    work = true;
 
     unsigned long int i;
     while ((i = atomic_fetch_add(&taskIndex, 1)) < blockCount) {
         computeBlock(i);
-        atomic_fetch_sub(&blocksRemaining, 1);
     }
-
-    while (atomic_load(&blocksRemaining) > 0) thrd_yield();
+    while (CheckWorking()) thrd_yield();
 }
 
 void TickCalc() {
@@ -69,42 +84,41 @@ void tick() {
     preState = tmp;
 }
 
-void killOneThread() {
-    if (ActiveCount == 0) return;
-    
-    terminateOneThread = true;
-    
-    int result;
-    thrd_join(threads[ActiveCount - 1], &result);
-    
-    terminateOneThread = false;
-    ActiveCount--;
+void killThreads(uint_fast8_t num) {
+    ActiveCount -= num;
+    terminateThreads = true;
+    for (uint_fast8_t i = 0; i < num; i++) {
+        thrd_join(threads[ActiveCount+i], NULL);
+    }
+    terminateThreads = false;
+    return;
 }
 
-void createOneThread() {
-    thrd_create(&threads[ActiveCount], workerThread, (void *)(uintptr_t)ActiveCount);
-    ActiveCount++;
+void createThreads(uint_fast8_t num) {
+    for (uint_fast8_t i = 0; i < num; i++) {
+        thrd_create(&threads[ActiveCount], workerThread, (void *)(uintptr_t)ActiveCount);
+        ActiveCount++;
+    }
 }
 
-void setThreadCount(__uint8_t count) {
-    if (count < 0) count = 0;
+void setThreadCount(uint_fast8_t count) {
     if (count > MAX_THREADS) count = MAX_THREADS;
 
     if (ActiveCount == count) return;
 
-    while (ActiveCount < count) {
-        createOneThread();
+    if (ActiveCount < count) {
+        createThreads(count-ActiveCount);
     }
 
-    while (ActiveCount > count) {
-        killOneThread();
+    if (ActiveCount > count) {
+        killThreads(ActiveCount-count);
     }
     return;
 }
 
 void killAllThreads() {
-    terminateThreads = true;
-    atomic_store(&blocksRemaining, 0); // Reset to 0 to allow threads to exit
+    terminateAllThreads = true;
+    work = false;
 
     for (unsigned long int i = 0; i < ActiveCount; i++) {
         thrd_join(threads[i], NULL);
