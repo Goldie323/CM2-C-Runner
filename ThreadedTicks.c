@@ -73,15 +73,13 @@ void TickCalc() {
 
 void tick() {
     // add before tick operations like editing blocks and such
+    flipBit = !flipBit;
     if (ActiveCount > 0) {
         threadedTickCalc();
     }
     else {
         TickCalc();
     }
-    bool *tmp = state;
-    state = preState;
-    preState = tmp;
 }
 
 void killThreads(uint_fast8_t num) {

@@ -8,13 +8,9 @@
 #include "Consts.h"
 #include "Util.h"
 
-extern Block **blocks;
-extern size_t blockCount;
-extern size_t blockCapacity;
-extern bool *state;
-extern bool *preState;
+extern block *blocks;
+extern bool flipBit;
 
-void setBlockSize(size_t capacity);
-void computeBlock(unsigned long int index);
+void computeBlock(block* b, bool flipBit);
 
 #endif

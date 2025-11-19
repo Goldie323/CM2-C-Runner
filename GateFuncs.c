@@ -5,268 +5,243 @@
 #include "Consts.h"
 #include "Util.h"
 
-Block **blocks = NULL;
-size_t blockCount = 0;
-size_t blockCapacity = 0;
+block *blocks = NULL;
 
-bool *state = NULL;
-bool *preState = NULL;
-
-void setBlockSize(size_t capacity) {
-    if (capacity<=blockCapacity) return; //Can't decrease or stay the same, only increases
-    blocks = srealloc(blocks, capacity * sizeof(Block *));
-    state = srealloc(state, capacity * sizeof(bool));
-    /*
-        faster than realloc because of the possibilty of it copying
-        the data to the new allocation and the current state in preState
-        doesn't matter only state matters and preState is used for
-        calculations which currently aren't being done as blocks are
-        added before the simulation or inbetween ticks meaning that
-        doing it this way will never remove necassary data and best
-        case would be check if it can grow in place and do it and 
-        fall back to free and malloc but there's nothing like that
-        and it's a lot to make something custom just for this since
-        the custom thing would need to handle system calls and would
-        likely need possibly even a custom kernel that handles it and
-        that'd only be for a tiny increase in efficiency and speed in
-        the case that it can grow in place.
-    */
-    if (preState) free(preState);
-    preState = smalloc(capacity * sizeof(bool));
-    return;
+static inline uint_least8_t getID(uint_least8_t b) {
+    return b & ID_MASK;
 }
 
-bool InfXor(const unsigned long int *inputs,  unsigned long int inputCount) {
+static inline void setID(uint_least8_t *b, uint_least8_t id) {
+    *b = (*b & ~ID_MASK) | (id & ID_MASK);
+}
+
+static inline bool getBool0(uint_least8_t b) {
+    return (b & BOOL0_MASK) != 0;
+}
+
+static inline void setBool0(uint_least8_t *b, bool value) {
+    if (value) *b |= BOOL0_MASK;
+    else *b &= ~BOOL0_MASK;
+}
+
+static inline bool getBool1(uint_least8_t b) {
+    return (b & BOOL1_MASK) != 0;
+}
+
+static inline void setBool1(uint_least8_t *b, uint_least8_t value) {
+    if (value) *b |= BOOL1_MASK;
+    else *b &= ~BOOL1_MASK;
+}
+
+
+bool get_State(block *b, int flipBit) {
+    if (!flipBit) return getBool0(b->meta);
+    else return getBool1(b->meta);
+}
+
+void set_Prestate(block *b, bool flipBit, bool value) {
+    if (flipBit) setBool0(b->meta, value);
+    else setBool1(b->meta, value);
+}
+
+
+
+bool norGate(block *b, bool flipBit) {
+    for (unsigned long int i = 0; i < b->inputCount; i++) {
+        if (get_State(b->inputs[i], flipBit)) return false;
+    }
+    return true;
+}
+
+bool andGate(block *b, bool flipBit) {
+    for (unsigned long int i = 0; i < b->inputCount; i++) {
+        if (!get_State(b->inputs[i], flipBit)) return false;
+    }
+    return true;
+}
+
+bool orGate(block *b, bool flipBit) {
+    for (unsigned long int i = 0; i < b->inputCount; i++) {
+        if (get_State(b->inputs[i], flipBit)) return true;
+    }
+    return false;
+}
+
+bool xorGate(block *b, bool flipBit) {
     bool result = false;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) result = !result;
+    for (unsigned long int i = 0; i < b->inputCount; i++) {
+        if (get_State(b->inputs[i], flipBit)) result = !result;
     }
     return result;
 }
 
-bool norGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return false;
-    }
-    return true;
-}
-
-bool andGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (!state[inputs[i]]) return false;
-    }
-    return true;
-}
-
-bool orGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
-    }
+bool ButtonGate(block *b, bool flipBit) {
     return false;
 }
 
-bool xorGate(unsigned long int index) {
-    return InfXor(blocks[index]->inputs, blocks[index]->inputCount);
-}
-
-bool ButtonGate(unsigned long int index) {
-    return false;
-}
-
-bool FlipFlopGate(unsigned long int index) {
-    Block *b = blocks[index];
-    FlipFlopBlock *Flipper = (FlipFlopBlock *)b;
-    bool CurrXor = InfXor(b->inputs, b->inputCount);
-    bool OutputState = state[index];
-    if (!Flipper->PrevXor&CurrXor)  OutputState = !OutputState;
-    Flipper->PrevXor = CurrXor;
+bool FlipFlopGate(block *b, bool flipBit) {
+    flipFlopBlock *flipper = (flipFlopBlock *)b;
+    bool CurrXor = xorGate(b, flipBit);
+    bool OutputState = get_State(b, flipBit);
+    if (!flipper->PrevXor && CurrXor) OutputState = !OutputState;
+    flipper->PrevXor = CurrXor;
     return OutputState;
 }
 
-bool ledGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
+bool ledGate(block *b, bool flipBit) {
+    for (unsigned long int i = 0; i < b->inputCount; i++) {
+        if (get_State(b->inputs[i], flipBit)) return true;
     }
     return false;
 }
 
-bool soundGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
+bool soundGate(block *b, bool flipBit) {
+    for (unsigned long int i = 0; i < b->inputCount; i++) {
+        if (get_State(b->inputs[i], flipBit)) return true;
     }
     return false;
 }
 
 // this needs to do a linear search of all the blocks to find the ones next to it and do an or operation to find it's current value
-bool conductorGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
+bool conductorGate(block *b, bool flipBit) {
+    for (unsigned long int i = 0; i < b->inputCount; i++) {
+        if (get_State(b->inputs[i], flipBit)) return true;
     }
     return false;
 }
 
-bool customGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
+bool customGate(block *b, bool flipBit) {
+    for (unsigned long int i = 0; i < b->inputCount; i++) {
+        if (get_State(b->inputs[i], flipBit)) return true;
     }
     return false;
 }
 
-bool nandGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (!state[inputs[i]]) return true;
+bool nandGate(block *b, bool flipBit) {
+    for (unsigned long int i = 0; i < b->inputCount; i++) {
+        if (!get_State(b->inputs[i], flipBit)) return true;
     }
     return false;
 }
 
-bool xnorGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
+bool xnorGate(block *b, bool flipBit) {
     bool result = true;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) result = !result;
+    for (unsigned long int i = 0; i < b->inputCount; i++) {
+        if (get_State(b->inputs[i], flipBit)) result = !result;
     }
     return result;
 }
 
-bool randomGate(unsigned long int index) {
-    Block *b = blocks[index];
-    RandomBlock *rb = (RandomBlock *)b;
+bool randomGate(block *b, bool flipBit) {
+    randomBlock *rb = (randomBlock *)b;
     __uint8_t Probability = rb->Probability; // 0 to 100
     if (Probability == 0) return false;
     if (Probability >= 100) return true;
 
-    unsigned long int randomNumber = rand() / (RAND_MAX + 1.0) * 101;
+    int randomNumber = rand() % 101;
     if (randomNumber < Probability) return true;
     return false;
 }
 
-bool TextGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
+bool TextGate(block *b, bool flipBit) {
+    for (unsigned long int i = 0; i < b->inputCount; i++) {
+        if (get_State(b->inputs[i], flipBit)) return true;
     }
     return false;
 }
 
 // kind of like button, gui might tell it to be on but inputs don't change it and so every tick just turn it off
-bool TileGate(unsigned long int index) {
+bool TileGate(block *b, bool flipBit) {
     return false;
 }
 
 // this also requires a search, a better one but still need to search and it needs to check all it's outputs and check if they're a node and if they are, run the same logic on them. Needs recursion :sob:
-bool nodeGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
+bool nodeGate(block *b, bool flipBit) {
+    for (unsigned long int i = 0; i < b->inputCount; i++) {
+        if (get_State(b->inputs[i], flipBit)) return true;
     }
     return false;
 }
 
 // gonna need to fix this code
-bool delayBlock(unsigned long int index) {
+bool delayGate(block *b, bool flipBit) {
     return false;
 }
 
 
 // need to do a linear search and check for all the globals/same user and then if ANY of them are on then it'll turn on, otherwise it's based on the OR of the inputs
-bool antennaGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
+bool antennaGate(block *b, bool flipBit) {
+    for (unsigned long int i = 0; i < b->inputCount; i++) {
+        if (get_State(b->inputs[i], flipBit)) return true;
     }
     return false;
 }
 
 // another recursive one based on xyz and so I don't wanna do this yet because it's require a linear search of all the blocks and I don't wanna deal with that yes
-bool conductor2Gate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
+bool conductor2Gate(block *b, bool flipBit) {
+    for (unsigned long int i = 0; i < b->inputCount; i++) {
+        if (get_State(b->inputs[i], flipBit)) return true;
     }
     return false;
 }
 
 // does a logic or and the rest is handled by GUI
-bool ledMixerGate(unsigned long int index) {
-    const unsigned long int *inputs = blocks[index]->inputs;
-    unsigned long int inputCount = blocks[index]->inputCount;
-    for (unsigned long int i = 0; i < inputCount; i++) {
-        if (state[inputs[i]]) return true;
+bool ledMixerGate(block *b, bool flipBit) {
+    for (unsigned long int i = 0; i < b->inputCount; i++) {
+        if (get_State(b->inputs[i], flipBit)) return true;
     }
     return false;
 }
 
-void computeBlock(unsigned long int index) {
-    Block *b = blocks[index];
+void computeBlock(block *b, bool flipBit) {
     if (!b) {
         return;
     }
     bool result = false;
-    switch (b->ID) {
+    switch (getID(b->meta)) {
         case 0: 
-            result = norGate(index); break;
+            result = norGate(b, flipBit); break;
         case 1: 
-            result = andGate(index); break;
+            result = andGate(b, flipBit); break;
         case 2: 
-            result = orGate(index); break;
+            result = orGate(b, flipBit); break;
         case 3: 
-            result = xorGate(index); break;
+            result = xorGate(b, flipBit); break;
         case 4: 
-            result = ButtonGate(index); break;
+            result = ButtonGate(b, flipBit); break;
         case 5: 
-            result = FlipFlopGate(index); break;
+            result = FlipFlopGate(b, flipBit); break;
         case 6: 
-            result = ledGate(index); break;
+            result = ledGate(b, flipBit); break;
         case 7: 
-            result = soundGate(index); break;
+            result = soundGate(b, flipBit); break;
         case 8: 
-            result = conductorGate(index); break;
+            result = conductorGate(b, flipBit); break;
         case 9: 
-            result = customGate(index); break;
+            result = customGate(b, flipBit); break;
         case 10: 
-            result = nandGate(index); break;
+            result = nandGate(b, flipBit); break;
         case 11: 
-            result = xnorGate(index); break;
+            result = xnorGate(b, flipBit); break;
         case 12: 
-            result = randomGate(index); break;
+            result = randomGate(b, flipBit); break;
         case 13: 
-            result = TextGate(index); break;
+            result = TextGate(b, flipBit); break;
         case 14: 
-            result = TileGate(index); break;
+            result = TileGate(b, flipBit); break;
         case 15: 
-            result = nodeGate(index); break;
+            result = nodeGate(b, flipBit); break;
         case 16: 
-            result = delayBlock(index); break;
+            result = delayGate(b, flipBit); break;
         case 17: 
-            result = antennaGate(index); break;
+            result = antennaGate(b, flipBit); break;
         case 18: 
-            result = conductor2Gate(index); break;
+            result = conductor2Gate(b, flipBit); break;
         case 19: 
-            result = ledMixerGate(index); break;
+            result = ledMixerGate(b, flipBit); break;
         default:
             return;
     }
     
-    preState[index] = result;
+    set_Prestate(b, flipBit, result);
 }
