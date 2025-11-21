@@ -3,87 +3,65 @@
 #include "Consts.h"
 #include "GateFuncs.h"
 
-void addInput(Block *b, unsigned long int value) {
+void addInput(block *bDst, block *bFrom) {
+    if (!bDst) return;
+    if (bDst->inputsSize == 0) {
+        bDst->inputsSize = 4;
+        bDst->inputs = smalloc(sizeof(block *) * bDst->inputsSize);
+    } else if (bDst->inputCount >= bDst->inputsSize) {
+        bDst->inputsSize *= 2;
+        bDst->inputs = srealloc(bDst->inputs, sizeof(block *) * bDst->inputsSize);
+    }
+    bDst->inputs[bDst->inputCount++] = bFrom;
+}
+
+void addOutput(block *bSrc, block *bTo) {
+    if (!bSrc) return;
+    if (bSrc->outputsSize == 0) {
+        bSrc->outputsSize = 4;
+        bSrc->outputs = smalloc(sizeof(block *) * bSrc->outputsSize);
+    } else if (bSrc->outputCount >= bSrc->outputsSize) {
+        bSrc->outputsSize *= 2;
+        bSrc->outputs = srealloc(bSrc->outputs, sizeof(block *) * bSrc->outputsSize);
+    }
+    bSrc->outputs[bSrc->outputCount++] = bTo;
+}
+
+void removeInput(block *bDst, block *bFrom) {
+    if (!bDst);
+    if (!bFrom);
+
+    unsigned long int i = 0;
+    while (bDst->inputs[i] =! bFrom && i < bDst->inputCount) i++;
+    while (i < bDst->inputCount) bDst->inputs[i] = bDst->inputs[i++];
+    return;
+}
+
+void removeOutput(block *bSrc, block *bTo) {
+    if (!bSrc) return;
+    if (!bTo) return;
+
+    unsigned long int i = 0;
+    while (bSrc->outputs[i] =! bTo && i < bSrc->outputCount) i++;
+    while (i < bSrc->outputCount) bSrc->outputs[i] = bSrc->outputs[i++];
+    return;
+}
+
+void removeConnection(block *bFrom, block *bTo) {
+    removeOutput(bFrom, bTo);
+    removeInput(bTo, bFrom);
+}
+
+void addConnection(block *bFrom, block *bTo) {
+    addOutput(bFrom, bTo);
+    addInput(bTo, bFrom);
+}
+
+void removeBlock(block *b) {
     if (!b) return;
-    if (b->inputsSize == 0) {
-        b->inputsSize = 4;
-        b->inputs = smalloc(sizeof(unsigned long int) * b->inputsSize);
-    } else if (b->inputCount >= b->inputsSize) {
-        b->inputsSize *= 2;
-        b->inputs = srealloc(b->inputs, sizeof(unsigned long int) * b->inputsSize);
-    }
-    b->inputs[b->inputCount++] = value;
-}
 
-void addOutput(Block *b, unsigned long int value) {
-    if (!b) return;
-    if (b->outputsSize == 0) {
-        b->outputsSize = 4;
-        b->outputs = smalloc(sizeof(unsigned long int) * b->outputsSize);
-    } else if (b->outputCount >= b->outputsSize) {
-        b->outputsSize *= 2;
-        b->outputs = srealloc(b->outputs, sizeof(unsigned long int) * b->outputsSize);
-    }
-    b->outputs[b->outputCount++] = value;
-}
-
-void removeInput(Block *b, unsigned long int value) {
-    for (unsigned long int i = 0; i < b->inputCount; i++) {
-        if (b->inputs[i] == value) {
-            for (unsigned long int j = i; j < b->inputCount - 1; j++) {
-                b->inputs[j] = b->inputs[j + 1];
-            }
-            b->inputCount--;
-            break;
-        }
-    }
-}
-
-void removeOutput(Block *b, unsigned long int value) {
-    for (unsigned long int i = 0; i < b->outputCount; i++) {
-        if (b->outputs[i] == value) {
-            for (unsigned long int j = i; j < b->outputCount - 1; j++) {
-                b->outputs[j] = b->outputs[j + 1];
-            }
-            b->outputCount--;
-            break;
-        }
-    }
-}
-
-void removeConnection(unsigned long int from, unsigned long int to) {
-    Block *src = blocks[from];
-    Block *dst = blocks[to];
-
-    removeOutput(src, to);
-    removeInput(dst, from);
-}
-
-void addConnection(unsigned long int from, unsigned long int to) {
-    Block *src = blocks[from];
-    Block *dst = blocks[to];
-
-    addOutput(src, to);
-    addInput(dst, from);
-}
-
-void removeBlock(unsigned long int index) {
-    if (index < 0 || index >= blockCount) return;
-
-    Block *b = blocks[index];
-
-    for (unsigned long int i = 0; i < b->inputCount; i++) {
-        unsigned long int inputIdx = b->inputs[i];
-        if (inputIdx >= 0 && inputIdx < blockCount) {
-            removeOutput(blocks[inputIdx], index);
-        }
-    }
-    for (unsigned long int i = 0; i < b->outputCount; i++) {
-        unsigned long int outputIdx = b->outputs[i];
-        if (outputIdx >= 0 && outputIdx < blockCount) {
-            removeInput(blocks[outputIdx], index);
-        }
-    }
+    for (unsigned long int i = 0; i < b->inputCount; i++) removeOutput(b->inputs[i], b);
+    for (unsigned long int i = 0; i < b->outputCount; i++) removeInput(b->outputs[i], b);
 
     free(b->inputs);
     free(b->outputs);
@@ -97,26 +75,26 @@ void removeBlock(unsigned long int index) {
 
 size_t extraDataSize(__uint8_t id) {
     switch (id) {
-        case 5: return sizeof(FlipFlopBlock);
-        case 6: return sizeof(LedBlock);
-        case 7: return sizeof(SoundBlock); 
-        case 12: return sizeof(RandomBlock);
-        case 13: return sizeof(CharBlock);
-        case 14: return sizeof(TileBlock) ;
-        case 16: return sizeof(DelayBlock);
-        case 17: return sizeof(AntennaBlock);
-        case 19: return sizeof(LedMixerBlock);
-        default: return sizeof(Block);
+        case 5: return sizeof(flipFlopBlock);
+        case 6: return sizeof(ledBlock);
+        case 7: return sizeof(soundBlock); 
+        case 12: return sizeof(randomBlock);
+        case 13: return sizeof(charBlock);
+        case 14: return sizeof(tileBlock) ;
+        case 16: return sizeof(delayBlock);
+        case 17: return sizeof(antennaBlock);
+        case 19: return sizeof(ledMixerBlock);
+        default: return sizeof(block);
     }
 }
 
-Block *CreateBlock(__uint8_t id, long int x, long int y, long int z, __uint8_t owner) {
+block *CreateBlock(__uint8_t id, long int x, long int y, long int z, __uint8_t owner) {
     if (blockCount >= blockCapacity) {
         if (blockCapacity == 0) setBlockSize(START_BLOCKS);
         else setBlockSize(blockCapacity*2);
     }
 
-    Block *b = scalloc(extraDataSize(id));
+    block *b = scalloc(extraDataSize(id));
     
     b->ID = id;
     b->x = x;
