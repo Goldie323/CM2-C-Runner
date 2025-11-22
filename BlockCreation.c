@@ -28,13 +28,14 @@ void addOutput(block *bSrc, block *bTo) {
 }
 
 void removeInput(block *bDst, block *bFrom) {
-    if (!bDst);
-    if (!bFrom);
+    if (!bDst) return;
+    if (!bFrom) return;
 
     unsigned long int i = 0;
-    while (bDst->inputs[i] =! bFrom && i < bDst->inputCount) i++;
-    while (i < bDst->inputCount) bDst->inputs[i] = bDst->inputs[i++];
-    return;
+    while (i < bDst->inputCount && bDst->inputs[i] != bFrom) i++;
+    if (i < bDst->inputCount) bDst->inputs[i] = bDst->inputs[--bDst->inputCount];
+    else return;
+    bDst->inputCount--;
 }
 
 void removeOutput(block *bSrc, block *bTo) {
@@ -42,17 +43,17 @@ void removeOutput(block *bSrc, block *bTo) {
     if (!bTo) return;
 
     unsigned long int i = 0;
-    while (bSrc->outputs[i] =! bTo && i < bSrc->outputCount) i++;
-    while (i < bSrc->outputCount) bSrc->outputs[i] = bSrc->outputs[i++];
-    return;
+    while (i < bSrc->outputCount && bSrc->outputs[i] != bTo) i++;
+    if (i < bSrc->outputCount) bSrc->outputs[i] = bSrc->outputs[--bSrc->outputCount];
+    else return;
 }
 
-void removeConnection(block *bFrom, block *bTo) {
+static inline void removeConnection(block *bFrom, block *bTo) {
     removeOutput(bFrom, bTo);
     removeInput(bTo, bFrom);
 }
 
-void addConnection(block *bFrom, block *bTo) {
+static inline void addConnection(block *bFrom, block *bTo) {
     addOutput(bFrom, bTo);
     addInput(bTo, bFrom);
 }
@@ -65,12 +66,7 @@ void removeBlock(block *b) {
 
     free(b->inputs);
     free(b->outputs);
-    free(b);
-
-    blockCount--;
-
-    blocks[index] = NULL;
-
+    setID(&b->meta, 255); //255 means dead, this avoids doing the merge at this moment but after all changes have been added at the point between ticks then it'll do a loop and free and merge all dead blocks/nodes
 }
 
 size_t extraDataSize(__uint8_t id) {
@@ -89,14 +85,9 @@ size_t extraDataSize(__uint8_t id) {
 }
 
 block *CreateBlock(__uint8_t id, long int x, long int y, long int z, __uint8_t owner) {
-    if (blockCount >= blockCapacity) {
-        if (blockCapacity == 0) setBlockSize(START_BLOCKS);
-        else setBlockSize(blockCapacity*2);
-    }
-
     block *b = scalloc(extraDataSize(id));
     
-    b->ID = id;
+    setID(&b->meta, id);
     b->x = x;
     b->y = y;
     b->z = z;
@@ -106,6 +97,7 @@ block *CreateBlock(__uint8_t id, long int x, long int y, long int z, __uint8_t o
     b->outputsSize = 0;
     b->inputCount = 0;
     b->outputCount = 0;
+    b->next = NULL;
     b->OwnerID = owner;
 
     return b;

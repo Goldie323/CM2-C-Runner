@@ -35,15 +35,15 @@ enum {
 #define BOOL0_MASK  0x20  // 0010 0000
 #define BOOL1_MASK  0x40  // 0100 0000
 
-typedef struct {
-    block **inputs;
+typedef struct block{
+    struct block **inputs;
     unsigned long int inputsSize;
     unsigned long int inputCount;
-    block **outputs;
+    struct block **outputs;
     unsigned long int outputsSize;
     unsigned long int outputCount;
     unsigned long int x, y, z;
-    block *next;
+    struct block *next;
     uint_least8_t OwnerID;
     uint_least8_t meta;
 } block;
