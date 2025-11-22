@@ -66,7 +66,7 @@ void removeBlock(block *b) {
 
     free(b->inputs);
     free(b->outputs);
-    setID(&b->meta, 255); //255 means dead, this avoids doing the merge at this moment but after all changes have been added at the point between ticks then it'll do a loop and free and merge all dead blocks/nodes
+    b->meta = 255; // 255 marks dead, after all changes are applied it'll do one loop to remove and merge the list to remove the dead blocks.
 }
 
 size_t extraDataSize(__uint8_t id) {
