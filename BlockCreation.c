@@ -85,7 +85,8 @@ size_t extraDataSize(__uint8_t id) {
 }
 
 block *CreateBlock(__uint8_t id, long int x, long int y, long int z, __uint8_t owner) {
-    block *b = scalloc(extraDataSize(id));
+    block *b = smalloc(extraDataSize(id));
+    memset(b, 0, ExtraDataSize(id));
     
     setID(&b->meta, id);
     b->x = x;

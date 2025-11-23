@@ -15,7 +15,5 @@ exit(1);}
 void *smalloc(size_t size);
 // Strong realloc
 void *srealloc(void *ptr, size_t size);
-// Strong calloc, except it only takes the size in bytes, not number of elements and size of element.
-void *scalloc(size_t size);
 
 #endif

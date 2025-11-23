@@ -5,7 +5,7 @@
 #include "GateFuncs.h"
 #include "BlockCreation.h"
 // fix these functions, they kind of suck and are fully vibe coded and probably aren't good. Fix them later and maybe add a parseString function that does the whole thing, also add support for
-void parseBlocks(const char *input, __uint8_t owner) {
+block *parseBlocks(const char *input, __uint8_t owner) {
     const char *ptr = input;
     while (*ptr && *ptr != '?') {
         unsigned long int idTmp, sTmp;
@@ -158,7 +158,7 @@ void parseBlocks(const char *input, __uint8_t owner) {
     }
 }
 
-void parseConnections(const char *input) {
+void parseConnections(block *b, const char *input) {
     const char *ptr = input;
     while (*ptr && *ptr != '?') {
         unsigned long int from, to;
