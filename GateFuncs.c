@@ -32,17 +32,17 @@ static inline void setBool1(uint_least8_t *meta, bool value) {
 }
 
 
-bool getState(block *b, int flipBit) {
+static inline bool getState(block *b, int flipBit) {
     if (!flipBit) return getBool0(b->meta);
     else return getBool1(b->meta);
 }
 
-void setPrestate(block *b, bool flipBit, bool value) {
+static inline void setPrestate(block *b, bool flipBit, bool value) {
     if (flipBit) setBool0(&b->meta, value);
     else setBool1(&b->meta, value);
 }
 
-void setState(block *b, bool flipBit, bool value) {
+static inline void setState(block *b, bool flipBit, bool value) {
     if (!flipBit) setBool0(&b->meta, value);
     else setBool1(&b->meta, value);
 }
@@ -202,45 +202,45 @@ void computeBlock(block *b, bool flipBit) {
     }
     bool result = false;
     switch (getID(b->meta)) {
-        case 0: 
+        case NOR: 
             result = norGate(b, flipBit); break;
-        case 1: 
+        case AND: 
             result = andGate(b, flipBit); break;
-        case 2: 
+        case OR: 
             result = orGate(b, flipBit); break;
-        case 3: 
+        case XOR: 
             result = xorGate(b, flipBit); break;
-        case 4: 
+        case BUTTON: 
             result = ButtonGate(b, flipBit); break;
-        case 5: 
+        case FLIPFLOP: 
             result = FlipFlopGate(b, flipBit); break;
-        case 6: 
+        case LED: 
             result = ledGate(b, flipBit); break;
-        case 7: 
+        case SOUND: 
             result = soundGate(b, flipBit); break;
-        case 8: 
+        case CONDUCTOR: 
             result = conductorGate(b, flipBit); break;
-        case 9: 
+        case CUSTOM: 
             result = customGate(b, flipBit); break;
-        case 10: 
+        case NAND: 
             result = nandGate(b, flipBit); break;
-        case 11: 
+        case XNOR: 
             result = xnorGate(b, flipBit); break;
-        case 12: 
+        case RANDOM: 
             result = randomGate(b, flipBit); break;
-        case 13: 
+        case TEXT: 
             result = TextGate(b, flipBit); break;
-        case 14: 
+        case TILE: 
             result = TileGate(b, flipBit); break;
-        case 15: 
+        case NODE: 
             result = nodeGate(b, flipBit); break;
-        case 16: 
+        case DELAY: 
             result = delayGate(b, flipBit); break;
-        case 17: 
+        case ANTENNA: 
             result = antennaGate(b, flipBit); break;
-        case 18: 
+        case CONDUCTOR_V2: 
             result = conductor2Gate(b, flipBit); break;
-        case 19: 
+        case LEDMIXER: 
             result = ledMixerGate(b, flipBit); break;
         default:
             return;
