@@ -24,7 +24,7 @@ enum {
     DELAY,
     ANTENNA,
     CONDUCTOR_V2,
-    LED_MIXER
+    LEDMIXER
 }; //gate  values
 
 enum {

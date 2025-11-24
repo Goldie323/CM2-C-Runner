@@ -71,15 +71,15 @@ void removeBlock(block *b) {
 
 size_t extraDataSize(__uint8_t id) {
     switch (id) {
-        case 5: return sizeof(flipFlopBlock);
-        case 6: return sizeof(ledBlock);
-        case 7: return sizeof(soundBlock); 
-        case 12: return sizeof(randomBlock);
-        case 13: return sizeof(charBlock);
-        case 14: return sizeof(tileBlock) ;
-        case 16: return sizeof(delayBlock);
-        case 17: return sizeof(antennaBlock);
-        case 19: return sizeof(ledMixerBlock);
+        case FLIPFLOP: return sizeof(flipFlopBlock);
+        case LED: return sizeof(ledBlock);
+        case SOUND: return sizeof(soundBlock); 
+        case RANDOM: return sizeof(randomBlock);
+        case TEXT: return sizeof(charBlock);
+        case TILE: return sizeof(tileBlock) ;
+        case DELAY: return sizeof(delayBlock);
+        case ANTENNA: return sizeof(antennaBlock);
+        case LEDMIXER: return sizeof(ledMixerBlock);
         default: return sizeof(block);
     }
 }
