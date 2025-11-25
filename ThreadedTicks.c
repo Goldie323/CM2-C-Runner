@@ -10,7 +10,7 @@ bool intialized = false;
 block *threadWork[MAX_THREADS];
 uint_fast8_t ActiveCount = 0;
 
-atomic_uint_fast64_t workingCount;
+atomic_uint_fast64_t workingCount = 0;
 volatile bool work = false;
 volatile bool terminateThreads = false;
 volatile bool globalFlipBit = false;
@@ -72,7 +72,7 @@ void tickCalc(block *list, bool flipBit) {
     }
 }
 
-static inline void tick(block *list, bool flipBit) {
+void tick(block *list, bool flipBit) {
     if (ActiveCount > 0) threadedTickCalc(list, flipBit);
     else tickCalc(list, flipBit);
 }
@@ -95,7 +95,7 @@ void createThreads(uint_fast8_t num) {
 }
 
 void setThreadCount(uint_fast8_t count) {
-    if (!intialized) memset(threadWork, NULL, sizeof(block *) * MAX_THREADS);
+    if (!intialized) memset(threadWork, 0, sizeof(block *) * MAX_THREADS);
     if (count > MAX_THREADS) count = MAX_THREADS;
     if (ActiveCount == count) return;
     if (ActiveCount < count) createThreads(count-ActiveCount);

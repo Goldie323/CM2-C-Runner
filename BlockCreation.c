@@ -35,7 +35,6 @@ void removeInput(block *bDst, block *bFrom) {
     while (i < bDst->inputCount && bDst->inputs[i] != bFrom) i++;
     if (i < bDst->inputCount) bDst->inputs[i] = bDst->inputs[--bDst->inputCount];
     else return;
-    bDst->inputCount--;
 }
 
 void removeOutput(block *bSrc, block *bTo) {
@@ -86,7 +85,7 @@ size_t extraDataSize(__uint8_t id) {
 
 block *CreateBlock(__uint8_t id, long int x, long int y, long int z, __uint8_t owner) {
     block *b = smalloc(extraDataSize(id));
-    memset(b, 0, ExtraDataSize(id));
+    memset(b, 0, extraDataSize(id));
     
     setID(&b->meta, id);
     b->x = x;

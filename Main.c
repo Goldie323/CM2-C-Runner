@@ -6,7 +6,7 @@
 #include "Consts.h"
 #include "GateFuncs.h"
 #include "BlockCreation.h"
-#include "SavestringParse.h"
+//#include "SavestringParse.h"
 #include "ThreadedTicks.h"
 
 void sleepForTick(double seconds) {
@@ -24,8 +24,7 @@ bool flipBit = 0;
 #define TAKE_ARGS 0 //eventually it'll always take the command line args but for now I like it having some build in options just since I don't want to have the issue of something wrong with the command line arguments or whatever.
 //also hopefully eventually it wouldn't even use that many command line args, hopefully the only arg at some point should just be a file that represents the current state of the simulation and then the program reads that and starts executing from that save point
 int main(unsigned long int argc, char *argv[]) {
-    setThreadCount(4);
-    setBlockSize(START_BLOCKS);
+    //setThreadCount(8);
    
     const char *input;
     unsigned long int totalTicks;
@@ -45,7 +44,16 @@ int main(unsigned long int argc, char *argv[]) {
         ticksPerSecond = 1;
     }
     
-    parseFull(input, 1);
+    //parseFull(input, 1);
+    block *list = NULL;
+    bool flipBit = false;
+    block *block1 = CreateBlock(0, 0, 0, 0, 200);
+    block *block2 = CreateBlock(2, 0, 0, 0, 200);
+    addConnection(block1, block2);
+    addConnection(block2, block1);
+    block1->next = block2;
+    list = block1;
+    block2->next = NULL;
 
     if (totalTicks <= 0) {
         fprintf(stderr, "Error: total ticks must be positive\n");
@@ -55,7 +63,8 @@ int main(unsigned long int argc, char *argv[]) {
     double tickDuration = (ticksPerSecond > 0) ? 1.0 / ticksPerSecond : 0;
     for (unsigned long int t = 0; t < totalTicks; t++) {
         clock_t start = (ticksPerSecond > 0) ? clock() : 0;
-        tick();
+        tick(list, flipBit);
+        flipBit = !flipBit;
         
         if (ticksPerSecond > 0) {
             clock_t end = clock();
@@ -63,10 +72,12 @@ int main(unsigned long int argc, char *argv[]) {
             if (elapsed < tickDuration) sleepForTick(tickDuration - elapsed);
         }
 
-        // Prunsigned long int tick and block states on the same line, updating dynamically
         printf("\rTick %lld | ", t+1);
-        for (unsigned long int i = 0; i < blockCount; i++) {
-            printf("%dB%lld:%d ", blocks[i]->ID, i, state[i]);
+        block *b = list;
+        unsigned long int i = 0;
+        while (b != NULL) {
+            printf("%dB%lu:%d ", getID(b->meta), i++, getState(b, flipBit));
+            b = b->next;
         }
         fflush(stdout);
     }
@@ -76,12 +87,14 @@ int main(unsigned long int argc, char *argv[]) {
     printf("\rAll threads joined\n");
 
     // Free dynamic memory
-    for (unsigned long int i = 0; i < blockCount; i++) {
-        printf("\rFreeing blocks %d/%d", i+1, blockCount);
-        fflush(stdout);
-        free(blocks[i]->inputs);
-        free(blocks[i]->outputs);
-        free(blocks[i]);
+    block *b = list;
+    list = NULL;
+    block *temp = NULL;
+    while (b != NULL) {
+        removeBlock(b);
+        temp = b->next; //this works because removeBlock only frees the dynamic memory within the element and not including the next element, and sets the block to 'dead'(meta==255)
+        free(b);
+        b = temp;
     }
     printf("\rAll blocks freed                    \n");
     return 0;
