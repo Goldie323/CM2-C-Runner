@@ -7,46 +7,49 @@
 
 thrd_t threads[MAX_THREADS];
 bool intialized = false;
-block *threadWork[MAX_THREADS];
-uint_fast8_t ActiveCount = 0;
+_Atomic block *threadWork[MAX_THREADS];
+atomic_uint_fast8_t ActiveCount = 0;
 
 atomic_uint_fast64_t workingCount = 0;
-volatile bool work = false;
-volatile bool terminateThreads = false;
-volatile bool globalFlipBit = false;
+atomic_bool work = false;
+atomic_bool terminateThreads = false;
+atomic_bool globalFlipBit = false;
 int workerThread(void *arg) {
     uint_fast8_t threadID = (uint_fast8_t)(uintptr_t)arg;
     bool localWork = false;
     while (true) {
-        while (!work && !terminateThreads) {
-            if (localWork&&!work) {
+        while (!atomic_load(&work) && !atomic_load(&terminateThreads)) {
+            if (localWork&&!atomic_load(&work)) {
                 atomic_fetch_sub(&workingCount, 1);
                 localWork = false;
             }
             thrd_yield();
         }
-        if (!localWork&&work) {
+        if (!localWork&&atomic_load(&work)) {
             atomic_fetch_add(&workingCount, 1);
             localWork = true;
         }
         
-        if ((ActiveCount == 0) || (terminateThreads && threadID >= ActiveCount - 1)) {
+        if ((atomic_load(&ActiveCount) == 0) || (atomic_load(&terminateThreads) && threadID >= atomic_load(&ActiveCount)-1)) {
             return 0;
         }
         
-        while (work) {
-            block *b = threadWork[threadID]; //main writes to and then this thread notices it and will set it to NULL afterwards so that main knows to write to it again.
-            threadWork[threadID] = NULL;
-            if (!b) thrd_yield();
-            computeBlock(b, globalFlipBit);
+        while (atomic_load(&work)) {
+            _Atomic block *b = atomic_load(&threadWork[threadID]); //main writes to and then this thread notices it and will set it to NULL afterwards so that main knows to write to it again.
+            atomic_store(&threadWork[threadID], NULL);
+            if (!b) {
+                thrd_yield();
+                continue;
+            }
+            computeBlock((block *)b, atomic_load(&globalFlipBit));
         }
     }
 }
 
 static inline bool insertWorkFirstAvailable(block *b) {
-    for (uint_fast8_t i = 0; i < ActiveCount; i++) {
-        if (!threadWork[i]) {
-            threadWork[i] = b;
+    for (uint_fast8_t i = 0; i < atomic_load(&ActiveCount); i++) {
+        if (!atomic_load(&threadWork[i])) {
+            atomic_store(&threadWork[i], (_Atomic block *)b);
             return 1;
         }
     }
@@ -54,13 +57,14 @@ static inline bool insertWorkFirstAvailable(block *b) {
 }
 
 void threadedTickCalc(block *list, bool flipBit) {
-    globalFlipBit = flipBit;
+    atomic_store(&globalFlipBit, flipBit);
     work = true;
     block *b = list;
     while (b != NULL) {
         while (!insertWorkFirstAvailable(b)); //keep trying to put the value in until there's a free space.
         b = b->next;
     }
+    work = false;
     while (atomic_load(&workingCount));
 }
 

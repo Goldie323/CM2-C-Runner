@@ -24,7 +24,7 @@ bool flipBit = 0;
 #define TAKE_ARGS 0 //eventually it'll always take the command line args but for now I like it having some build in options just since I don't want to have the issue of something wrong with the command line arguments or whatever.
 //also hopefully eventually it wouldn't even use that many command line args, hopefully the only arg at some point should just be a file that represents the current state of the simulation and then the program reads that and starts executing from that save point
 int main(unsigned long int argc, char *argv[]) {
-    //setThreadCount(8);
+    setThreadCount(8);
    
     const char *input;
     unsigned long int totalTicks;
