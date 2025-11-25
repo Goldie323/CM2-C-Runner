@@ -8,6 +8,8 @@
 
 void tick();
 void setThreadCount(__uint8_t count);
-void killAllThreads();
+static inline void killAllThreads() {
+    setThreadCount(0);
+}
 
 #endif

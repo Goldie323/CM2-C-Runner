@@ -28,7 +28,7 @@ enum {
 }; //gate  values
 
 enum {
-    MAX_THREADS = 20
+    MAX_THREADS = 20 //should be set to twice the number of cores on your computer. This will probably be set up to a reasonable number later on but this is just to prevent dynamic memory for a simple array of the threads.
 };
 
 #define ID_MASK     0x1F  // 0001 1111

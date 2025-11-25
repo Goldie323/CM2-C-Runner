@@ -6,80 +6,75 @@
 
 
 thrd_t threads[MAX_THREADS];
+bool intialized = false;
+block *threadWork[MAX_THREADS];
 uint_fast8_t ActiveCount = 0;
 
-atomic_uint_fast64_t taskIndex;
-volatile bool working[MAX_THREADS];
+atomic_uint_fast64_t workingCount;
 volatile bool work = false;
-volatile bool terminateAllThreads = false;
 volatile bool terminateThreads = false;
+volatile bool globalFlipBit = false;
 int workerThread(void *arg) {
     uint_fast8_t threadID = (uint_fast8_t)(uintptr_t)arg;
-    while (!terminateAllThreads) {
-        while (!work && !(terminateThreads || terminateAllThreads)) {
-            working[threadID] = false;
+    bool localWork = false;
+    while (true) {
+        while (!work && !terminateThreads) {
+            if (localWork&&!work) {
+                atomic_fetch_sub(&workingCount, 1);
+                localWork = false;
+            }
             thrd_yield();
         }
+        if (!localWork&&work) {
+            atomic_fetch_add(&workingCount, 1);
+            localWork = true;
+        }
         
-        if (terminateThreads && threadID >= ActiveCount - 1) {
+        if ((ActiveCount == 0) || (terminateThreads && threadID >= ActiveCount - 1)) {
             return 0;
         }
-
-        if (terminateAllThreads) {
-            return 0;
+        
+        while (work) {
+            block *b = threadWork[threadID]; //main writes to and then this thread notices it and will set it to NULL afterwards so that main knows to write to it again.
+            threadWork[threadID] = NULL;
+            if (!b) thrd_yield();
+            computeBlock(b, globalFlipBit);
         }
+    }
+}
 
-        if (!work) {
-            break;
+static inline bool insertWorkFirstAvailable(block *b) {
+    for (uint_fast8_t i = 0; i < ActiveCount; i++) {
+        if (!threadWork[i]) {
+            threadWork[i] = b;
+            return 1;
         }
-        working[threadID] = true;
-        unsigned long int i = atomic_fetch_add(&taskIndex, 1);
-        if (i >= blockCount) break;
-        computeBlock(i);
     }
     return 0;
 }
 
-bool CheckWorking() {
-   for (uint_fast8_t i = 0; i < ActiveCount; i++) {
-      if (working[i]) return true;
-   }
-   return false;
-}
-
-void threadedTickCalc() {
-    atomic_store(&taskIndex, 0);
+void threadedTickCalc(block *list, bool flipBit) {
+    globalFlipBit = flipBit;
     work = true;
-
-    unsigned long int i;
-    while ((i = atomic_fetch_add(&taskIndex, 1)) < blockCount) {
-        computeBlock(i);
+    block *b = list;
+    while (b != NULL) {
+        while (!insertWorkFirstAvailable(b)); //keep trying to put the value in until there's a free space.
+        b = b->next;
     }
-    while (CheckWorking()) thrd_yield();
+    while (atomic_load(&workingCount));
 }
 
-void TickCalc() {
-    unsigned long int taskIndex = 0;
-    unsigned long int blocksRemaining = blockCount;
-
-    unsigned long int i;
-    while ((i = taskIndex++) < blockCount) {
-        computeBlock(i);
-        blocksRemaining--;
+void tickCalc(block *list, bool flipBit) {
+    block *b = list;
+    while (b != NULL) {
+        computeBlock(b, flipBit);
+        b = b->next;
     }
-
-    return;
 }
 
-void tick() {
-    // add before tick operations like editing blocks and such
-    flipBit = !flipBit;
-    if (ActiveCount > 0) {
-        threadedTickCalc();
-    }
-    else {
-        TickCalc();
-    }
+static inline void tick(block *list, bool flipBit) {
+    if (ActiveCount > 0) threadedTickCalc(list, flipBit);
+    else tickCalc(list, flipBit);
 }
 
 void killThreads(uint_fast8_t num) {
@@ -100,26 +95,13 @@ void createThreads(uint_fast8_t num) {
 }
 
 void setThreadCount(uint_fast8_t count) {
+    if (!intialized) memset(threadWork, NULL, sizeof(block *) * MAX_THREADS);
     if (count > MAX_THREADS) count = MAX_THREADS;
-
     if (ActiveCount == count) return;
-
-    if (ActiveCount < count) {
-        createThreads(count-ActiveCount);
-    }
-
-    if (ActiveCount > count) {
-        killThreads(ActiveCount-count);
-    }
-    return;
+    if (ActiveCount < count) createThreads(count-ActiveCount);
+    if (ActiveCount > count) killThreads(ActiveCount-count);
 }
 
-void killAllThreads() {
-    terminateAllThreads = true;
-    work = false;
-
-    for (unsigned long int i = 0; i < ActiveCount; i++) {
-        thrd_join(threads[i], NULL);
-    }
-    ActiveCount = 0;
+static inline void killAllThreads() {
+    setThreadCount(0);
 }
