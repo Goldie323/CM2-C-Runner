@@ -5,31 +5,34 @@
 #include "GateFuncs.h"
 #include "BlockCreation.h"
 // fix these functions, they kind of suck and are fully vibe coded and probably aren't good. Fix them later and maybe add a parseString function that does the whole thing, also add support for
-block *parseBlocks(const char *input, __uint8_t owner) {
+block *parseBlocks(const char *input, uint_fast8_t owner, bool flipBit) {
     const char *ptr = input;
+    block *b = NULL;
+    block *end = NULL;
+    bool firstLoop = true;
     while (*ptr && *ptr != '?') {
         unsigned long int idTmp, sTmp;
         long int x, y, z;
-        unsigned long int charsRead;
+        unsigned long int charsRead = 0;
     
         // Read basic block info safely
-        if (sscanf(ptr, "%d,%d,%ld,%ld,%ld%n", &idTmp, &sTmp, &x, &y, &z, &charsRead) < 5)
-            break;
-        __uint8_t id = (__uint8_t)idTmp;
+        if (sscanf(ptr, "%lu,%lu,%ld,%ld,%ld%n", &idTmp, &sTmp, &x, &y, &z, &charsRead) < 5) break;
+        uint_fast8_t id = (uint_fast8_t)idTmp;
         bool s = (sTmp != 0);
-
         ptr += charsRead;
-        
-        if (blockCount >= START_BLOCKS) {
-            fprintf(stderr, "Error: too many blocks (max=%d)\n", START_BLOCKS);
-            break;
-        }
-
         // Create the block
-        Block *b = CreateBlock(id, x, y, z, owner);
-        if (!b) break;
+        if (firstLoop) {
+            b = CreateBlock(id, x, y, z, owner);
+            firstLoop = false;
+            end = b;
+        }
+        else {
+            end->next = CreateBlock(id, x, y, z, owner);
+            end = end->next;
+        }
+        if (!end) break;
+        setState(end, flipBit, s);
 
-        blocks[blockCount] = b;
         // Read extra data if present
         if (*ptr == ',') {
             ptr++; // skip comma
@@ -43,102 +46,102 @@ block *parseBlocks(const char *input, __uint8_t owner) {
 
                 switch (id) {
                     case FLIPFLOP: { // Flip Flop Block
-                        FlipFlopBlock *flipFlopBlock = (FlipFlopBlock *)blocks[blockCount];
-                        flipFlopBlock->PrevXor = 1;
+                        flipFlopBlock *f = (flipFlopBlock *)end;
+                        f->PrevXor = 1;
                         break;
                     }
                     case LED: { // LED Block
-                        LedBlock *ledBlock = (LedBlock *)blocks[blockCount];
-                        ledBlock->RedAmount = 255;
-                        ledBlock->GreenAmount = 255;
-                        ledBlock->BlueAmount = 255;
-                        ledBlock->OpacityOn = 100;
-                        ledBlock->OpacityOff = 5;
-                        ledBlock->analog = false;
+                        ledBlock *l = (ledBlock *)end;
+                        l->RedAmount = 255;
+                        l->GreenAmount = 255;
+                        l->BlueAmount = 255;
+                        l->OpacityOn = 100;
+                        l->OpacityOff = 5;
+                        l->analog = false;
 
                         unsigned long int values[6];
                         unsigned long int count = sscanf(buffer, "%d+%d+%d+%d+%d+%d",
                                            &values[0], &values[1], &values[2],
                                            &values[3], &values[4], &values[5]);
-                        if (count >= 1) ledBlock->RedAmount = values[0];
-                        if (count >= 2) ledBlock->GreenAmount = values[1];
-                        if (count >= 3) ledBlock->BlueAmount = values[2];
-                        if (count >= 4) ledBlock->OpacityOn = values[3];
-                        if (count >= 5) ledBlock->OpacityOff = values[4];
-                        if (count >= 6) ledBlock->analog = (values[5] != 0);
+                        if (count >= 1) l->RedAmount = values[0];
+                        if (count >= 2) l->GreenAmount = values[1];
+                        if (count >= 3) l->BlueAmount = values[2];
+                        if (count >= 4) l->OpacityOn = values[3];
+                        if (count >= 5) l->OpacityOff = values[4];
+                        if (count >= 6) l->analog = (values[5] != 0);
                         break;
                     }
                     case SOUND: { // Sound Block
-                        SoundBlock *soundBlock = (SoundBlock *)blocks[blockCount];
-                        soundBlock->Frequency = 44000;
-                        soundBlock->Instrument = 0;
+                        soundBlock *s = (soundBlock *)end;
+                        s->Frequency = 44000;
+                        s->Instrument = 0;
 
                         unsigned long int values[2];
                         unsigned long int count = sscanf(buffer, "%d+%d", &values[0], &values[1]);
-                        if (count >= 1) soundBlock->Frequency = values[0];
-                        if (count >= 2) soundBlock->Instrument = values[1];
+                        if (count >= 1) s->Frequency = values[0];
+                        if (count >= 2) s->Instrument = values[1];
                         break;
                     }
                     case RANDOM: { // Random Block
-                        RandomBlock *randomBlock = (RandomBlock *)blocks[blockCount];
-                        randomBlock->Probability = 50;
+                        randomBlock *r = (randomBlock *)end;
+                        r->Probability = 50;
                         unsigned long int value;
                         if (sscanf(buffer, "%d", &value) == 1)
-                            randomBlock->Probability = value;
+                            r->Probability = value;
                         break;
                     }
                     case TEXT: { // Text Block
-                        CharBlock *charBlock = (CharBlock *)blocks[blockCount];
-                        charBlock->Character = 'A';
+                        charBlock *c = (charBlock *)end;
+                        c->Character = 'A';
                         unsigned long int value;
                         if (sscanf(buffer, "%d", &value) == 1)
-                            charBlock->Character = (char)value;
+                            c->Character = (char)value;
                         break;
                     }
                     case TILE: { // Tile Block
-                        TileBlock *tileBlock = (TileBlock *)blocks[blockCount];
-                        tileBlock->RedAmount = 255;
-                        tileBlock->GreenAmount = 255;
-                        tileBlock->BlueAmount = 255;
-                        tileBlock->Material = 0;
-                        tileBlock->Collision = false;
+                        tileBlock *t = (tileBlock *)end;
+                        t->RedAmount = 255;
+                        t->GreenAmount = 255;
+                        t->BlueAmount = 255;
+                        t->Material = 0;
+                        t->Collision = false;
 
                         unsigned long int values[5];
                         unsigned long int count = sscanf(buffer, "%d+%d+%d+%d+%d",
                                            &values[0], &values[1], &values[2],
                                            &values[3], &values[4]);
-                        if (count >= 1) tileBlock->RedAmount = values[0];
-                        if (count >= 2) tileBlock->GreenAmount = values[1];
-                        if (count >= 3) tileBlock->BlueAmount = values[2];
-                        if (count >= 4) tileBlock->Material = values[3];
-                        if (count >= 5) tileBlock->Collision = (values[4] != 0);
+                        if (count >= 1) t->RedAmount = values[0];
+                        if (count >= 2) t->GreenAmount = values[1];
+                        if (count >= 3) t->BlueAmount = values[2];
+                        if (count >= 4) t->Material = values[3];
+                        if (count >= 5) t->Collision = (values[4] != 0);
                         break;
                     }
                     case DELAY: { // Delay Block
-                        DelayBlock *delayBlock = (DelayBlock *)blocks[blockCount];
-                        delayBlock->DelayTime = 1;
+                        delayBlock *d = (delayBlock *)end;
+                        d->DelayTime = 1;
                         unsigned long int value;
                         if (sscanf(buffer, "%d", &value) == 1)
-                            delayBlock->DelayTime = value;
+                            d->DelayTime = value;
                         break;
                     }
                     case ANTENNA: { // Antenna Block
-                        AntennaBlock *antennaBlock = (AntennaBlock *)blocks[blockCount];
-                        antennaBlock->Signal = 0;
-                        antennaBlock->Global = false;
+                        antennaBlock *a = (antennaBlock *)end;
+                        a->Signal = 0;
+                        a->Global = false;
 
                         unsigned long int signal, global;
                         unsigned long int count = sscanf(buffer, "%d+%d", &signal, &global);
-                        if (count >= 1) antennaBlock->Signal = signal;
-                        if (count >= 2) antennaBlock->Global = (global != 0);
+                        if (count >= 1) a->Signal = signal;
+                        if (count >= 2) a->Global = (global != 0);
                         break;
                     }
-                    case LED_MIXER: { // LED Mixer Block
-                        LedMixerBlock *ledMixerBlock = (LedMixerBlock *)blocks[blockCount];
-                        ledMixerBlock->Additive = true;
+                    case LEDMIXER: { // LED Mixer Block
+                        ledMixerBlock *l = (ledMixerBlock *)end;
+                        l->Additive = true;
                         unsigned long int value;
                         if (sscanf(buffer, "%d", &value) == 1)
-                            ledMixerBlock->Additive = (value != 0);
+                            l->Additive = (value != 0);
                         break;
                     }
                     default:
@@ -150,16 +153,27 @@ block *parseBlocks(const char *input, __uint8_t owner) {
         }
         
         if (*ptr == ';') ptr++;
-
-        // Update global arrays
-        blockCount++;
-        state[blockCount - 1] = s;
-        preState[blockCount - 1] = s;
     }
+    return b;
 }
 
 void parseConnections(block *b, const char *input) {
     const char *ptr = input;
+    printf("%lu\n", (unsigned long int)b);
+    block *loop = b;
+    unsigned long int blockCap = 32768;
+    unsigned long int blockSize = 0;
+    block **blockDict = smalloc(sizeof(block *) * blockCap);
+    while (loop!=NULL) {
+        if (blockSize >= blockCap) {
+            blockCap *= 2;
+            blockDict = srealloc(blockDict, sizeof(block *) * blockCap);
+        }
+        printf("BLOCK SIZE: %lu\n", blockSize);
+        blockDict[blockSize++] = loop;
+        printf("blockCap: %lu; blockDict[%lu]: %lu\n", blockCap, blockSize, (unsigned long int)loop);
+        loop = loop->next;
+    }
     while (*ptr && *ptr != '?') {
         unsigned long int from, to;
         unsigned long int charsRead = 0;
@@ -170,34 +184,30 @@ void parseConnections(block *b, const char *input) {
 
         from--;
         to--;
-        if (from < 0 || from >= blockCount || to < 0 || to >= blockCount) {
-            fprintf(stderr, "Warning: Invalid connection %d->%d (blockCount=%d), skipping\n", from, to, blockCount);
-            continue;
-        }
 
-        Block *src = blocks[from];
-        Block *dst = blocks[to];
+        block *src = blockDict[from];
+        block *dst = blockDict[to];
 
         if (!src || !dst) {
             fprintf(stderr, "Warning: Null block in connection %d->%d, skipping\n", from, to);
             continue;
         }
 
-        addOutput(src, to);
-        addInput(dst, from);
+        printf("src: %lu\n", (unsigned long int)src);
+        printf("dst: %lu\n", (unsigned long int)dst);
+
+        addConnection(src, dst);
     }
+    free(blockDict);
 }
 
-void parseFull(const char *input, __uint8_t owner) {
+static inline block *parseFull(const char *input, uint_fast8_t owner, bool flipBit) {
     const char *q1 = strchr(input, '?');
+    block *b = NULL;
     if (q1) {
-        size_t blockDataLen = q1 - input;
-        char *blockData = smalloc(blockDataLen + 1);
-        strncpy(blockData, input, blockDataLen);
-        blockData[blockDataLen] = '\0';
-        parseBlocks(blockData, owner);
-        free(blockData);
-
-        parseConnections(q1+1);
+        b = parseBlocks(input, owner, flipBit);
+        if (!b) return NULL;
+        parseConnections(b, q1+1);
     }
+    return b;
 }

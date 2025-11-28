@@ -14,3 +14,12 @@ void *srealloc(void *ptr, size_t size) {
    if (alloc) return alloc;
    else app_abort("srealloc()", "Error: Failed to reallocate memory for buffer\n")
 }
+
+unsigned long int countSemicolon(const char *ptr) {
+   unsigned long int count = 0;
+   while (ptr!="\0") {
+      if (ptr==";") count++;
+      ptr++;
+   }
+   return count;
+}

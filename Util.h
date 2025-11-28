@@ -15,5 +15,6 @@ exit(1);}
 void *smalloc(size_t size);
 // Strong realloc
 void *srealloc(void *ptr, size_t size);
-
+// count semicolons
+unsigned long int countSemicolon(const char *ptr);
 #endif
