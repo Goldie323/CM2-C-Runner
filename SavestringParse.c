@@ -5,18 +5,20 @@
 #include "GateFuncs.h"
 #include "BlockCreation.h"
 // fix these functions, they kind of suck and are fully vibe coded and probably aren't good. Fix them later and maybe add a parseString function that does the whole thing, also add support for
-block *parseBlocks(const char *input, uint_fast8_t owner, bool flipBit) {
-    const char *ptr = input;
+block *parseBlocks(const char *ptr, uint_fast8_t owner, bool flipBit) {
     block *b = NULL;
     block *end = NULL;
     bool firstLoop = true;
     while (*ptr && *ptr != '?') {
-        unsigned long int idTmp, sTmp;
-        long int x, y, z;
-        unsigned long int charsRead = 0;
+        int idTmp, sTmp = 0;
+        long int x, y, z = 0;
+        unsigned int charsRead = 0;
     
         // Read basic block info safely
-        if (sscanf(ptr, "%lu,%lu,%ld,%ld,%ld%n", &idTmp, &sTmp, &x, &y, &z, &charsRead) < 5) break;
+        printf("entering DEATH\n");
+        int lifeLine;
+        if (lifeLine = sscanf(ptr, "%d,%d,%ld,%ld,%ld%n", &idTmp, &sTmp, &x, &y, &z, &charsRead) < 5) printf("error: not five(%d) thingy's found at place: %s", lifeLine, ptr);
+        printf("exiting DEATH\n");
         uint_fast8_t id = (uint_fast8_t)idTmp;
         bool s = (sTmp != 0);
         ptr += charsRead;
