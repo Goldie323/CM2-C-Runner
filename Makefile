@@ -1,14 +1,30 @@
 CC = gcc
 CCFLAGS = -fsanitize=address -g
-SRC = $(wildcard *.c)
+
+COMMON_SRC := \
+	Main.c \
+	GateFuncs.c \
+	BlockCreation.c \
+	SavestringParse.c \
+	Util.c
+
+ifeq ($(THREADS),0)
+    TICKS_SRC = SingleTicks.c
+    LIBS      =
+else
+    TICKS_SRC = ThreadedTicks.c
+    LIBS      = -lpthread
+endif
+
+SRC := $(COMMON_SRC) $(TICKS_SRC)
 
 all: compile run
 
 clean:
-	rm -rf Main
+	rm -f Main
 
 compile: clean
-	$(CC) $(CCFLAGS) $(SRC) -o Main
+	$(CC) $(CCFLAGS) $(SRC) $(LIBS) -o Main
 
 run:
-	./Main $(cat ./input.txt)
+	./Main $(shell cat ./input.txt)

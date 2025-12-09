@@ -2,9 +2,8 @@
 #define BLOCKCREATION_H
 
 #include <stdio.h>
-#include "Util.h"
+#include <stdint.h>
 #include "Consts.h"
-#include "GateFuncs.h"
 
 // these 4 functions should never be used outside of removeConnection and addConnection. Low key should just add them to the code for add and remove connection.
 void addInput(block *bDst, block *bFrom);
@@ -23,6 +22,6 @@ static inline void addConnection(block *bFrom, block *bTo) {
     addInput(bTo, bFrom);
 }
 void removeBlock(block *b);
-block *CreateBlock(__uint8_t id, long int x, long int y, long int z, __uint8_t owner);
+block *CreateBlock(uint_fast8_t id, long int x, long int y, long int z, uint_fast8_t owner);
 
 #endif

@@ -7,7 +7,7 @@
 #include "GateFuncs.h"
 #include "BlockCreation.h"
 #include "SavestringParse.h"
-#include "ThreadedTicks.h"
+#include "Ticks.h"
 
 void sleepForTick(double seconds) {
     struct timespec req, rem;
@@ -21,14 +21,14 @@ void sleepForTick(double seconds) {
 block *start = NULL;
 bool flipBit = 0;
 
-#define TAKE_ARGS 1 //eventually it'll always take the command line args but for now I like it having some build in options just since I don't want to have the issue of something wrong with the command line arguments or whatever.
+#define TAKE_ARGS 0 //eventually it'll always take the command line args but for now I like it having some build in options just since I don't want to have the issue of something wrong with the command line arguments or whatever.
 //also hopefully eventually it wouldn't even use that many command line args, hopefully the only arg at some point should just be a file that represents the current state of the simulation and then the program reads that and starts executing from that save point
 int main(unsigned long int argc, char *argv[]) {
    
-    const char *input;
-    unsigned long int totalTicks;
-    unsigned long int ticksPerSecond;
-    uint_fast8_t threadCount;
+    const char *input = NULL;
+    unsigned long int totalTicks = 0;
+    unsigned long int ticksPerSecond = 0;
+    uint_fast8_t threadCount = 0;
     if (TAKE_ARGS) {
         if (!argc==5) {
             printf("Wrong amount of inputs, there should be 3 and in the order of '%s {SaveString} {TotalTicks} {TickRate} {ThreadCount}", argv[0]);
@@ -46,8 +46,7 @@ int main(unsigned long int argc, char *argv[]) {
         threadCount = 8;
     }
 
-    block *list = parseFull(input, 1, flipBit);
-    /*
+    //block *list = parseFull(input, 1, flipBit);
     block *list = NULL;
     bool flipBit = false;
     block *block1 = CreateBlock(0, 0, 0, 0, 200);
@@ -57,7 +56,7 @@ int main(unsigned long int argc, char *argv[]) {
     block1->next = block2;
     list = block1;
     block2->next = NULL;
-    */
+    
     setThreadCount(threadCount);
     double tickDuration = (ticksPerSecond > 0) ? 1.0 / ticksPerSecond : 0;
     for (unsigned long int t = 0; t < totalTicks; t++) {

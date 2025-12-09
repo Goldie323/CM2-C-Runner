@@ -1,7 +1,8 @@
-#include <stdio.h>
-#include "Util.h"
+#include <string.h>
+#include <stdlib.h>
 #include "Consts.h"
 #include "GateFuncs.h"
+#include "Util.h"
 
 void addInput(block *bDst, block *bFrom) {
     if (!bDst) return;
@@ -68,7 +69,7 @@ void removeBlock(block *b) {
     b->meta = 255; // 255 marks dead, after all changes are applied it'll do one loop to remove and merge the list to remove the dead blocks.
 }
 
-size_t extraDataSize(__uint8_t id) {
+size_t extraDataSize(uint_fast8_t id) {
     switch (id) {
         case FLIPFLOP: return sizeof(flipFlopBlock);
         case LED: return sizeof(ledBlock);
@@ -83,7 +84,7 @@ size_t extraDataSize(__uint8_t id) {
     }
 }
 
-block *CreateBlock(__uint8_t id, long int x, long int y, long int z, __uint8_t owner) {
+block *CreateBlock(uint_fast8_t id, long int x, long int y, long int z, uint_fast8_t owner) {
     block *b = smalloc(extraDataSize(id));
     memset(b, 0, extraDataSize(id));
     
