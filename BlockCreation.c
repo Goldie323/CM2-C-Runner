@@ -69,24 +69,10 @@ void removeBlock(block *b) {
     b->meta = 255; // 255 marks dead, after all changes are applied it'll do one loop to remove and merge the list to remove the dead blocks.
 }
 
-size_t extraDataSize(uint_fast8_t id) {
-    switch (id) {
-        case FLIPFLOP: return sizeof(flipFlopBlock);
-        case LED: return sizeof(ledBlock);
-        case SOUND: return sizeof(soundBlock); 
-        case RANDOM: return sizeof(randomBlock);
-        case TEXT: return sizeof(charBlock);
-        case TILE: return sizeof(tileBlock) ;
-        case DELAY: return sizeof(delayBlock);
-        case ANTENNA: return sizeof(antennaBlock);
-        case LEDMIXER: return sizeof(ledMixerBlock);
-        default: return sizeof(block);
-    }
-}
 
 block *CreateBlock(uint_fast8_t id, long int x, long int y, long int z, uint_fast8_t owner) {
-    block *b = smalloc(extraDataSize(id));
-    memset(b, 0, extraDataSize(id));
+    block *b = smalloc(sizeof(block));
+    memset(b, 0, sizeof(block));
     
     setID(&b->meta, id);
     b->x = x;
@@ -98,7 +84,6 @@ block *CreateBlock(uint_fast8_t id, long int x, long int y, long int z, uint_fas
     b->outputsSize = 0;
     b->inputCount = 0;
     b->outputCount = 0;
-    b->next = NULL;
     b->OwnerID = owner;
 
     return b;

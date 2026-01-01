@@ -4,7 +4,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
-enum {
+#include "Meta.h"
+
+enum gateTypes{
     NOR,
     AND,
     OR,
@@ -101,10 +103,6 @@ union extraData{
     struct ledMixerBlock ledMixerBlock;
 };
 
-#define ID_MASK     0x1F  // 0001 1111
-#define BOOL0_MASK  0x20  // 0010 0000
-#define BOOL1_MASK  0x40  // 0100 0000
-
 typedef struct {
     unsigned long int *inputs;
     unsigned long int inputsSize;
@@ -113,7 +111,7 @@ typedef struct {
     unsigned long int outputsSize;
     unsigned long int outputCount;
     unsigned long int x, y, z;
-    union extraData;
+    union extraData extraData;
     uint_least8_t OwnerID;
     uint_least8_t meta;
 } block;
