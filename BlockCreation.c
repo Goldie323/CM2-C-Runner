@@ -4,87 +4,84 @@
 #include "GateFuncs.h"
 #include "Util.h"
 
-void addInput(block *bDst, block *bFrom) {
+void addInput(block *BlockArray, uint_least64_t bDst, uint_least64_t bFrom) {
     if (!bDst) return;
-    if (bDst->inputsSize == 0) {
-        bDst->inputsSize = 4;
-        bDst->inputs = smalloc(sizeof(block *) * bDst->inputsSize);
-    } else if (bDst->inputCount >= bDst->inputsSize) {
-        bDst->inputsSize *= 2;
-        bDst->inputs = srealloc(bDst->inputs, sizeof(block *) * bDst->inputsSize);
+    if (BlockArray[bDst].InputsSize == 0) {
+        BlockArray[bDst].InputsSize = 4;
+        BlockArray[bDst].Inputs = smalloc(sizeof(uint_least64_t *) * BlockArray[bDst].InputsSize);
+    } else if (BlockArray[bDst].InputCount >= BlockArray[bDst].InputsSize) {
+        BlockArray[bDst].InputsSize *= 2;
+        BlockArray[bDst].Inputs = srealloc(BlockArray[bDst].Inputs, sizeof(uint_least64_t *) * BlockArray[bDst].InputsSize);
     }
-    bDst->inputs[bDst->inputCount++] = bFrom;
+    BlockArray[bDst].Inputs[BlockArray[bDst].InputCount++] = bFrom;
 }
 
-void addOutput(block *bSrc, block *bTo) {
+void addOutput(block *BlockArray, uint_least64_t bSrc, uint_least64_t bTo) {
     if (!bSrc) return;
-    if (bSrc->outputsSize == 0) {
-        bSrc->outputsSize = 4;
-        bSrc->outputs = smalloc(sizeof(block *) * bSrc->outputsSize);
-    } else if (bSrc->outputCount >= bSrc->outputsSize) {
-        bSrc->outputsSize *= 2;
-        bSrc->outputs = srealloc(bSrc->outputs, sizeof(block *) * bSrc->outputsSize);
+    if (BlockArray[bSrc].OutputsSize == 0) {
+        BlockArray[bSrc].OutputsSize = 4;
+        BlockArray[bSrc].Outputs = smalloc(sizeof(uint_least64_t *) * BlockArray[bSrc].OutputsSize);
+    } else if (BlockArray[bSrc].OutputCount >= BlockArray[bSrc].OutputsSize) {
+        BlockArray[bSrc].OutputsSize *= 2;
+        BlockArray[bSrc].Outputs = srealloc(BlockArray[bSrc].Outputs, sizeof(uint_least64_t *) * BlockArray[bSrc].OutputsSize);
     }
-    bSrc->outputs[bSrc->outputCount++] = bTo;
+    BlockArray[bSrc].Outputs[BlockArray[bSrc].OutputCount++] = bTo;
 }
 
-void removeInput(block *bDst, block *bFrom) {
+void removeInput(block *BlockArray, uint_least64_t bDst, uint_least64_t bFrom) {
     if (!bDst) return;
     if (!bFrom) return;
 
     unsigned long int i = 0;
-    while (i < bDst->inputCount && bDst->inputs[i] != bFrom) i++;
-    if (i < bDst->inputCount) bDst->inputs[i] = bDst->inputs[--bDst->inputCount];
+    while (i < BlockArray[bDst].InputCount && BlockArray[bDst].Inputs[i] != bFrom) i++;
+    if (i < BlockArray[bDst].InputCount) BlockArray[bDst].Inputs[i] = BlockArray[bDst].Inputs[--BlockArray[bDst].InputCount];
     else return;
 }
 
-void removeOutput(block *bSrc, block *bTo) {
+void removeOutput(block *BlockArray, uint_least64_t bSrc, uint_least64_t bTo) {
     if (!bSrc) return;
     if (!bTo) return;
 
     unsigned long int i = 0;
-    while (i < bSrc->outputCount && bSrc->outputs[i] != bTo) i++;
-    if (i < bSrc->outputCount) bSrc->outputs[i] = bSrc->outputs[--bSrc->outputCount];
+    while (i < BlockArray[bSrc].OutputCount && BlockArray[bSrc].Outputs[i] != bTo) i++;
+    if (i < BlockArray[bSrc].OutputCount) BlockArray[bSrc].Outputs[i] = BlockArray[bSrc].Outputs[--BlockArray[bSrc].OutputCount];
     else return;
 }
 
-static inline void removeConnection(block *bFrom, block *bTo) {
-    removeOutput(bFrom, bTo);
-    removeInput(bTo, bFrom);
+static inline void removeConnection(block *BlockArray, uint_least64_t *bFrom, uint_least64_t *bTo) {
+    removeOutput(BlockArray, bFrom, bTo);
+    removeInput(BlockArray, bTo, bFrom);
 }
 
-static inline void addConnection(block *bFrom, block *bTo) {
-    addOutput(bFrom, bTo);
-    addInput(bTo, bFrom);
+static inline void addConnection(block *BlockArray, uint_least64_t *bFrom, uint_least64_t *bTo) {
+    addOutput(BlockArray, bFrom, bTo);
+    addInput(BlockArray, bTo, bFrom);
 }
 
-void removeBlock(block *b) {
+void removeBlock(block *BlockArray, uint_least64_t b) {
     if (!b) return;
 
-    for (unsigned long int i = 0; i < b->inputCount; i++) removeOutput(b->inputs[i], b);
-    for (unsigned long int i = 0; i < b->outputCount; i++) removeInput(b->outputs[i], b);
+    for (unsigned long int i = 0; i < BlockArray[b].InputCount; i++) removeOutput(BlockArray, BlockArray[b].Inputs[i], b);
+    for (unsigned long int i = 0; i < BlockArray[b].OutputCount; i++) removeInput(BlockArray, BlockArray[b].Outputs[i], b);
 
-    free(b->inputs);
-    free(b->outputs);
-    b->meta = 255; // 255 marks dead, after all changes are applied it'll do one loop to remove and merge the list to remove the dead blocks.
+    free(BlockArray[b].Inputs);
+    free(BlockArray[b].Outputs);
+    setDead(&BlockArray[b].Meta);
 }
 
 
-block *CreateBlock(uint_fast8_t id, long int x, long int y, long int z, uint_fast8_t owner) {
-    block *b = smalloc(sizeof(block));
-    memset(b, 0, sizeof(block));
+void CreateBlock(block *Location, uint_fast8_t id, long int x, long int y, long int z, uint_fast8_t owner) {
+    memset(Location, 0, sizeof(block));
     
-    setID(&b->meta, id);
-    b->x = x;
-    b->y = y;
-    b->z = z;
-    b->inputs = NULL;
-    b->outputs = NULL;
-    b->inputsSize = 0;
-    b->outputsSize = 0;
-    b->inputCount = 0;
-    b->outputCount = 0;
-    b->OwnerID = owner;
-
-    return b;
+    setID(&Location->Meta, id);
+    Location->x = x;
+    Location->y = y;
+    Location->z = z;
+    Location->Inputs = NULL;
+    Location->Outputs = NULL;
+    Location->InputsSize = 0;
+    Location->OutputsSize = 0;
+    Location->InputCount = 0;
+    Location->OutputCount = 0;
+    Location->OwnerID = owner;
 }

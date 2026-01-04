@@ -16,7 +16,6 @@ static inline uint_least8_t getID(metaData meta) {
 
 static inline void setID(metaData *meta, uint_least8_t id) {
     meta->id = id;
-    return;
 }
 
 static inline bool getBool0(metaData meta) {
@@ -25,7 +24,6 @@ static inline bool getBool0(metaData meta) {
 
 static inline void setBool0(metaData *meta, bool value) {
     meta->bools[0] = value;
-    return;
 }
 
 static inline bool getBool1(metaData meta) {
@@ -34,7 +32,6 @@ static inline bool getBool1(metaData meta) {
 
 static inline void setBool1(metaData *meta, bool value) {
     meta->bools[1] = value;
-    return;
 }
 
 
@@ -46,13 +43,11 @@ static inline bool getState(metaData *meta, int flipBit) {
 static inline void setPrestate(metaData *meta, bool flipBit, bool value) {
     if (flipBit) setBool0(meta, value);
     else setBool1(meta, value);
-    return;
 }
 
 static inline void setState(metaData *meta, bool flipBit, bool value) {
     if (!flipBit) setBool0(meta, value);
     else setBool1(meta, value);
-    return;
 }
 
 static inline void setZero(metaData *meta) {

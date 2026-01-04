@@ -17,7 +17,6 @@ static inline uint_least8_t getID(metaData meta) {
 
 static inline void setID(metaData *meta, uint_least8_t id) {
     *meta = (*meta & ~ID_MASK) | (id & ID_MASK);
-    return;
 }
 
 static inline bool getBool0(metaData meta) {
@@ -27,7 +26,6 @@ static inline bool getBool0(metaData meta) {
 static inline void setBool0(metaData *meta, bool value) {
     if (value) *meta |= BOOL0_MASK;
     else *meta &= ~BOOL0_MASK;
-    return;
 }
 
 static inline bool getBool1(metaData meta) {
@@ -37,7 +35,6 @@ static inline bool getBool1(metaData meta) {
 static inline void setBool1(metaData *meta, bool value) {
     if (value) *meta |= BOOL1_MASK;
     else *meta &= ~BOOL1_MASK;
-    return;
 }
 
 
@@ -49,23 +46,19 @@ static inline bool getState(metaData *meta, int flipBit) {
 static inline void setPrestate(metaData *meta, bool flipBit, bool value) {
     if (flipBit) setBool0(meta, value);
     else setBool1(meta, value);
-    return;
 }
 
 static inline void setState(metaData *meta, bool flipBit, bool value) {
     if (!flipBit) setBool0(meta, value);
     else setBool1(meta, value);
-    return;
 }
 
 static inline void setZero(metaData *meta) {
     *meta = 0;
-    return;
 }
 
 static inline void setDead(metaData *meta) {
     *meta = 255;
-    return;
 }
 
 static inline bool checkDead(metaData meta) {

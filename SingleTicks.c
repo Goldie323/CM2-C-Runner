@@ -10,7 +10,7 @@ void tick(block *list, bool flipBit) {
     }
 }
 
-void setThreadCount(uint_fast8_t count) {
+void setThreadCount(uint_least8_t count) {
     return;
 }
 

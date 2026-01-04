@@ -8,7 +8,7 @@
 
 void tick(block *list, bool flipBit);
 //does nothing in single threaded compilation
-void setThreadCount(__uint8_t count);
+void setThreadCount(uint_least8_t count);
 //does nothing in single threaded compilation
 static inline void killAllThreads() {
     setThreadCount(0);
